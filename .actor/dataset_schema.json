@@ -1,0 +1,51 @@
+{
+    "actorSpecification": 1,
+    "fields": {},
+    "views": {
+        "papers": {
+            "title": "Academic Papers",
+            "transformation": {
+                "fields": [
+                    "schema_version", "type", "title", "authors",
+                    "year", "publication_date", "venue", "journal",
+                    "abstract", "tldr",
+                    "doi", "arxiv_id", "pubmed_id", "semantic_scholar_id",
+                    "fields_of_study", "publication_types",
+                    "citation_count", "reference_count", "influential_citation_count",
+                    "is_open_access", "open_access_pdf_url",
+                    "external_urls",
+                    "source", "scraped_at"
+                ]
+            },
+            "display": {
+                "component": "table",
+                "properties": {
+                    "schema_version": { "label": "Schema", "format": "text" },
+                    "type": { "label": "Type", "format": "text" },
+                    "title": { "label": "Title", "format": "text" },
+                    "authors": { "label": "Authors", "format": "text" },
+                    "year": { "label": "Year", "format": "number" },
+                    "publication_date": { "label": "Published", "format": "text" },
+                    "venue": { "label": "Venue", "format": "text" },
+                    "journal": { "label": "Journal", "format": "text" },
+                    "abstract": { "label": "Abstract", "format": "text" },
+                    "tldr": { "label": "TLDR", "format": "text" },
+                    "doi": { "label": "DOI", "format": "text" },
+                    "arxiv_id": { "label": "arXiv ID", "format": "text" },
+                    "pubmed_id": { "label": "PubMed ID", "format": "text" },
+                    "semantic_scholar_id": { "label": "S2 ID", "format": "text" },
+                    "fields_of_study": { "label": "Fields", "format": "text" },
+                    "publication_types": { "label": "Pub Types", "format": "text" },
+                    "citation_count": { "label": "Citations", "format": "number" },
+                    "reference_count": { "label": "References", "format": "number" },
+                    "influential_citation_count": { "label": "Influential", "format": "number" },
+                    "is_open_access": { "label": "Open Access", "format": "boolean" },
+                    "open_access_pdf_url": { "label": "PDF URL", "format": "link" },
+                    "external_urls": { "label": "URLs", "format": "text" },
+                    "source": { "label": "Source", "format": "text" },
+                    "scraped_at": { "label": "Scraped At", "format": "text" }
+                }
+            }
+        }
+    }
+}
