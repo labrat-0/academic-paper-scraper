@@ -71,8 +71,8 @@ class AcademicPaperScraper:
     """
 
     # Retry settings for S2 429 rate-limit responses
-    _S2_MAX_RETRIES = 3
-    _S2_BACKOFF_SECS = (5.0, 10.0, 20.0)
+    _S2_MAX_RETRIES = 4
+    _S2_BACKOFF_SECS = (10.0, 20.0, 40.0, 60.0)
     _S2_USER_AGENT = (
         "AcademicPaperScraper/1.0 (Apify Actor; "
         "https://apify.com/labrat011/academic-paper-scraper)"
@@ -171,8 +171,20 @@ class AcademicPaperScraper:
         logger.info("Search mode: source=%s, query='%s'", source, self._config.query)
 
         if source == "semantic_scholar":
+            count = 0
             async for record in self._s2_search():
+                count += 1
                 yield record
+
+            # Fallback: if S2 returned 0 results (likely rate-limited),
+            # try arXiv as a backup source
+            if count == 0 and self._config.query.strip():
+                logger.warning(
+                    "S2 returned 0 results, falling back to arXiv search"
+                )
+                async for record in self._arxiv_search():
+                    yield record
+
         elif source == "arxiv":
             async for record in self._arxiv_search():
                 yield record
@@ -220,6 +232,42 @@ class AcademicPaperScraper:
             data = resp.json()
             total_available = data.get("total", 0)
             papers = data.get("data", [])
+
+            # Soft rate limit detection: if first page returns 0 results
+            # for a non-trivial query, S2 is likely shadow-limiting us.
+            # Retry up to 2 times with longer waits.
+            if not papers and offset == 0 and len(query) > 2:
+                soft_retried = False
+                for soft_attempt in range(2):
+                    wait = 30.0 * (soft_attempt + 1)
+                    logger.warning(
+                        "S2 returned empty first page (possible soft rate limit), "
+                        "retry %d/2 in %.0fs. total=%d",
+                        soft_attempt + 1, wait, total_available,
+                    )
+                    await asyncio.sleep(wait)
+                    resp = await self._s2_request(
+                        f"{_S2_BASE}/paper/search",
+                        params=params,
+                    )
+                    if resp is None:
+                        return
+                    if resp.status_code != 200:
+                        logger.error("S2 search returned %d: %s", resp.status_code, resp.text[:500])
+                        return
+                    data = resp.json()
+                    total_available = data.get("total", 0)
+                    papers = data.get("data", [])
+                    if papers:
+                        soft_retried = True
+                        break
+
+                if not papers:
+                    logger.warning(
+                        "S2 still returning empty results after soft-limit retries, "
+                        "giving up on S2 search"
+                    )
+                    break
 
             if not papers:
                 break
