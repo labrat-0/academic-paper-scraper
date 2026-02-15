@@ -12,6 +12,7 @@ Modes:
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
@@ -69,6 +70,14 @@ class AcademicPaperScraper:
     Supports Semantic Scholar and arXiv APIs with unified PaperRecord output.
     """
 
+    # Retry settings for S2 429 rate-limit responses
+    _S2_MAX_RETRIES = 3
+    _S2_BACKOFF_SECS = (5.0, 10.0, 20.0)
+    _S2_USER_AGENT = (
+        "AcademicPaperScraper/1.0 (Apify Actor; "
+        "https://apify.com/labrat011/academic-paper-scraper)"
+    )
+
     def __init__(
         self,
         config: ScraperInput,
@@ -77,6 +86,64 @@ class AcademicPaperScraper:
         self._config = config
         self._client = http_client
         self._rate_limiter = RateLimiter(config.request_interval_secs)
+
+    async def _s2_request(
+        self,
+        url: str,
+        params: dict[str, str | int] | None = None,
+    ) -> httpx.Response | None:
+        """Make an S2 API request with retry + exponential backoff on 429.
+
+        Returns the Response on success, or None if all retries are exhausted
+        or a non-retryable error occurs.
+        """
+        for attempt in range(self._S2_MAX_RETRIES + 1):
+            await self._rate_limiter.wait()
+            try:
+                resp = await self._client.get(
+                    url,
+                    params=params,
+                    timeout=30,
+                    headers={"User-Agent": self._S2_USER_AGENT},
+                )
+            except httpx.HTTPError as exc:
+                logger.error("S2 request failed: %s", exc)
+                return None
+
+            if resp.status_code != 429:
+                return resp
+
+            # 429 -- rate limited, retry with backoff
+            if attempt >= self._S2_MAX_RETRIES:
+                logger.error(
+                    "S2 rate limited after %d retries, giving up. "
+                    "Response body: %s",
+                    self._S2_MAX_RETRIES,
+                    resp.text[:500],
+                )
+                return None
+
+            # Respect Retry-After header if present, otherwise use backoff
+            retry_after = resp.headers.get("Retry-After")
+            if retry_after:
+                try:
+                    wait_secs = float(retry_after)
+                except ValueError:
+                    wait_secs = self._S2_BACKOFF_SECS[attempt]
+            else:
+                wait_secs = self._S2_BACKOFF_SECS[attempt]
+
+            logger.warning(
+                "S2 rate limited (429), retry %d/%d in %.1fs. "
+                "Response body: %s",
+                attempt + 1,
+                self._S2_MAX_RETRIES,
+                wait_secs,
+                resp.text[:300],
+            )
+            await asyncio.sleep(wait_secs)
+
+        return None  # should not reach here
 
     async def run(self) -> AsyncGenerator[dict, None]:
         """Execute the configured mode and yield paper records."""
@@ -139,19 +206,11 @@ class AcademicPaperScraper:
             if self._config.open_access_only:
                 params["openAccessPdf"] = ""  # S2 uses empty string to filter
 
-            await self._rate_limiter.wait()
-            try:
-                resp = await self._client.get(
-                    f"{_S2_BASE}/paper/search",
-                    params=params,
-                    timeout=30,
-                )
-            except httpx.HTTPError as exc:
-                logger.error("S2 search request failed: %s", exc)
-                return
-
-            if resp.status_code == 429:
-                logger.warning("S2 rate limited, stopping pagination")
+            resp = await self._s2_request(
+                f"{_S2_BASE}/paper/search",
+                params=params,
+            )
+            if resp is None:
                 return
 
             if resp.status_code != 200:
@@ -293,15 +352,11 @@ class AcademicPaperScraper:
         paper_id = s2_paper_id(id_type, normalized)
         logger.info("Looking up paper: %s (type=%s)", paper_id, id_type)
 
-        await self._rate_limiter.wait()
-        try:
-            resp = await self._client.get(
-                f"{_S2_BASE}/paper/{quote(paper_id, safe=':')}",
-                params={"fields": _S2_PAPER_FIELDS},
-                timeout=30,
-            )
-        except httpx.HTTPError as exc:
-            logger.error("S2 paper lookup failed: %s", exc)
+        resp = await self._s2_request(
+            f"{_S2_BASE}/paper/{quote(paper_id, safe=':')}",
+            params={"fields": _S2_PAPER_FIELDS},
+        )
+        if resp is None:
             return
 
         if resp.status_code == 404:
@@ -367,15 +422,8 @@ class AcademicPaperScraper:
                 "fields": citation_fields,
             }
 
-            await self._rate_limiter.wait()
-            try:
-                resp = await self._client.get(endpoint, params=params, timeout=30)
-            except httpx.HTTPError as exc:
-                logger.error("S2 citations request failed: %s", exc)
-                return
-
-            if resp.status_code == 429:
-                logger.warning("S2 rate limited during citation fetch, stopping")
+            resp = await self._s2_request(endpoint, params=params)
+            if resp is None:
                 return
 
             if resp.status_code == 404:

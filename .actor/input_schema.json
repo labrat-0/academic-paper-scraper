@@ -129,7 +129,7 @@
             "type": "number",
             "description": "Minimum seconds between API requests. Semantic Scholar allows 1 req/sec without API key. arXiv recommends 3s between requests.",
             "editor": "number",
-            "default": 1.5,
+            "default": 3.0,
             "minimum": 0.5,
             "maximum": 10
         }

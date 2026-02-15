@@ -34,7 +34,7 @@ class ScraperInput(BaseModel):
     sort_by: str = "relevance"  # relevance, date
 
     # Advanced
-    request_interval_secs: float = Field(default=1.5, ge=0.5, le=10.0)
+    request_interval_secs: float = Field(default=3.0, ge=0.5, le=10.0)
 
     @classmethod
     def from_actor_input(cls, raw: dict[str, Any]) -> ScraperInput:
@@ -54,7 +54,7 @@ class ScraperInput(BaseModel):
             include_tldr=raw.get("includeTldr", True),
             include_citation_counts=raw.get("includeCitationCounts", True),
             sort_by=raw.get("sortBy", "relevance"),
-            request_interval_secs=raw.get("requestIntervalSecs", 1.5),
+            request_interval_secs=raw.get("requestIntervalSecs", 3.0),
         )
 
     def validate_input(self) -> str | None:
