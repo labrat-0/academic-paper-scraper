@@ -89,6 +89,7 @@
             "description": "Maximum number of papers to return (1-500). Free users are limited to 25 per run.",
             "editor": "number",
             "default": 100,
+            "prefill": 10,
             "minimum": 1,
             "maximum": 500
         },
