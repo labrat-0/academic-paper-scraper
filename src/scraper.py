@@ -70,11 +70,11 @@ class AcademicPaperScraper:
     Supports Semantic Scholar and arXiv APIs with unified PaperRecord output.
     """
 
-    # Retry settings for S2 429 rate-limit responses
-    _S2_MAX_RETRIES = 4
-    # Faster backoff for unauthenticated requests so arXiv fallback triggers sooner.
-    # With an API key, 429s are rare; these only matter for keyless runs.
-    _S2_BACKOFF_SECS = (3.0, 6.0, 15.0, 30.0)
+    # Retry settings for S2 429 rate-limit responses.
+    # 0 retries: on first 429 give up immediately so arXiv fallback triggers fast.
+    # S2 consistently rate-limits on Apify's shared IPs — retrying wastes time.
+    _S2_MAX_RETRIES = 0
+    _S2_BACKOFF_SECS: tuple = ()
     _S2_USER_AGENT = (
         "AcademicPaperScraper/1.0 (Apify Actor; "
         "https://apify.com/labrat011/academic-paper-scraper)"
