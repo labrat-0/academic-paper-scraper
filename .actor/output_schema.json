@@ -1,11 +1,12 @@
 {
     "actorOutputSchemaVersion": 1,
     "title": "Academic Paper Scraper Results",
-    "description": "Links to dataset items for Academic Paper Scraper.",
+    "description": "Dataset containing scraped academic paper records from Semantic Scholar and arXiv.",
     "properties": {
         "results": {
             "type": "string",
             "title": "Results",
+            "description": "Dataset containing all scraped paper records",
             "template": "{{links.apiDefaultDatasetUrl}}/items"
         }
     }

@@ -1,49 +1,207 @@
 {
     "actorSpecification": 1,
-    "fields": {},
+    "fields": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+            "schema_version": {
+                "type": "string",
+                "description": "Schema version of the output record",
+                "nullable": true,
+                "example": "1.0"
+            },
+            "type": {
+                "type": "string",
+                "description": "Record type identifier",
+                "nullable": true,
+                "example": "academic_paper"
+            },
+            "title": {
+                "type": "string",
+                "description": "Title of the academic paper",
+                "nullable": true,
+                "example": "Attention Is All You Need"
+            },
+            "authors": {
+                "type": "array",
+                "description": "List of author names",
+                "items": { "type": "string" },
+                "nullable": true,
+                "example": ["A. Researcher", "B. Author"]
+            },
+            "year": {
+                "type": "number",
+                "description": "Year the paper was published",
+                "nullable": true,
+                "example": 2023
+            },
+            "publication_date": {
+                "type": "string",
+                "description": "Full publication date in YYYY-MM-DD format",
+                "nullable": true,
+                "example": "2023-06-15"
+            },
+            "venue": {
+                "type": "string",
+                "description": "Conference or journal name where the paper was published",
+                "nullable": true,
+                "example": "NeurIPS"
+            },
+            "journal": {
+                "type": "string",
+                "description": "Journal name with volume and page information",
+                "nullable": true,
+                "example": "Nature Machine Intelligence, vol. 5, pp. 100-110"
+            },
+            "abstract": {
+                "type": "string",
+                "description": "Full abstract of the paper",
+                "nullable": true,
+                "example": "We propose a novel architecture for sequence modeling tasks..."
+            },
+            "tldr": {
+                "type": "string",
+                "description": "AI-generated one-sentence summary from Semantic Scholar",
+                "nullable": true,
+                "example": "A new method for sequence modeling that outperforms existing approaches."
+            },
+            "doi": {
+                "type": "string",
+                "description": "Digital Object Identifier for the paper",
+                "nullable": true,
+                "example": "10.1000/xyz123"
+            },
+            "arxiv_id": {
+                "type": "string",
+                "description": "arXiv paper identifier",
+                "nullable": true,
+                "example": "2301.00001"
+            },
+            "pubmed_id": {
+                "type": "string",
+                "description": "PubMed identifier for biomedical papers",
+                "nullable": true,
+                "example": "37654321"
+            },
+            "semantic_scholar_id": {
+                "type": "string",
+                "description": "Semantic Scholar paper identifier",
+                "nullable": true,
+                "example": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+            },
+            "corpus_id": {
+                "type": "number",
+                "description": "Semantic Scholar Corpus ID",
+                "nullable": true,
+                "example": 123456789
+            },
+            "fields_of_study": {
+                "type": "array",
+                "description": "Academic fields or disciplines the paper belongs to",
+                "items": { "type": "string" },
+                "nullable": true,
+                "example": ["Computer Science", "Artificial Intelligence"]
+            },
+            "publication_types": {
+                "type": "array",
+                "description": "Publication type classifications (e.g. JournalArticle, Conference)",
+                "items": { "type": "string" },
+                "nullable": true,
+                "example": ["JournalArticle", "Review"]
+            },
+            "citation_count": {
+                "type": "number",
+                "description": "Total number of times the paper has been cited",
+                "nullable": true,
+                "example": 1542
+            },
+            "reference_count": {
+                "type": "number",
+                "description": "Number of references in the paper",
+                "nullable": true,
+                "example": 48
+            },
+            "influential_citation_count": {
+                "type": "number",
+                "description": "Number of highly influential citations as determined by Semantic Scholar",
+                "nullable": true,
+                "example": 87
+            },
+            "is_open_access": {
+                "type": "boolean",
+                "description": "Whether the paper is freely available to read",
+                "nullable": true,
+                "example": true
+            },
+            "open_access_pdf_url": {
+                "type": "string",
+                "description": "Direct URL to the open-access PDF, if available",
+                "nullable": true,
+                "example": "https://arxiv.org/pdf/2301.00001.pdf"
+            },
+            "external_urls": {
+                "type": "object",
+                "description": "Map of source names to their URLs for this paper",
+                "properties": {},
+                "required": [],
+                "additionalProperties": true,
+                "nullable": true,
+                "example": {
+                    "semantic_scholar": "https://www.semanticscholar.org/paper/example",
+                    "arxiv_abs": "https://arxiv.org/abs/2301.00001",
+                    "doi_url": "https://doi.org/10.1000/xyz123"
+                }
+            },
+            "source": {
+                "type": "string",
+                "description": "Data source used to retrieve this record (semantic_scholar or arxiv)",
+                "nullable": true,
+                "example": "semantic_scholar"
+            },
+            "scraped_at": {
+                "type": "string",
+                "description": "ISO 8601 timestamp when this record was scraped",
+                "nullable": true,
+                "example": "2025-01-20T14:32:00.000Z"
+            }
+        },
+        "required": [],
+        "additionalProperties": true
+    },
     "views": {
         "papers": {
             "title": "Academic Papers",
             "transformation": {
                 "fields": [
-                    "schema_version", "type", "title", "authors",
-                    "year", "publication_date", "venue", "journal",
-                    "abstract", "tldr",
-                    "doi", "arxiv_id", "pubmed_id", "semantic_scholar_id",
-                    "fields_of_study", "publication_types",
-                    "citation_count", "reference_count", "influential_citation_count",
-                    "is_open_access", "open_access_pdf_url",
-                    "external_urls",
-                    "source", "scraped_at"
+                    "title",
+                    "authors",
+                    "year",
+                    "venue",
+                    "citation_count",
+                    "influential_citation_count",
+                    "is_open_access",
+                    "fields_of_study",
+                    "tldr",
+                    "doi",
+                    "open_access_pdf_url",
+                    "source"
                 ]
             },
             "display": {
                 "component": "table",
                 "properties": {
-                    "schema_version": { "label": "Schema", "format": "text" },
-                    "type": { "label": "Type", "format": "text" },
                     "title": { "label": "Title", "format": "text" },
-                    "authors": { "label": "Authors", "format": "text" },
+                    "authors": { "label": "Authors", "format": "array" },
                     "year": { "label": "Year", "format": "number" },
-                    "publication_date": { "label": "Published", "format": "text" },
                     "venue": { "label": "Venue", "format": "text" },
-                    "journal": { "label": "Journal", "format": "text" },
-                    "abstract": { "label": "Abstract", "format": "text" },
-                    "tldr": { "label": "TLDR", "format": "text" },
-                    "doi": { "label": "DOI", "format": "text" },
-                    "arxiv_id": { "label": "arXiv ID", "format": "text" },
-                    "pubmed_id": { "label": "PubMed ID", "format": "text" },
-                    "semantic_scholar_id": { "label": "S2 ID", "format": "text" },
-                    "fields_of_study": { "label": "Fields", "format": "text" },
-                    "publication_types": { "label": "Pub Types", "format": "text" },
                     "citation_count": { "label": "Citations", "format": "number" },
-                    "reference_count": { "label": "References", "format": "number" },
                     "influential_citation_count": { "label": "Influential", "format": "number" },
                     "is_open_access": { "label": "Open Access", "format": "boolean" },
-                    "open_access_pdf_url": { "label": "PDF URL", "format": "link" },
-                    "external_urls": { "label": "URLs", "format": "text" },
-                    "source": { "label": "Source", "format": "text" },
-                    "scraped_at": { "label": "Scraped At", "format": "text" }
+                    "fields_of_study": { "label": "Fields", "format": "array" },
+                    "tldr": { "label": "TLDR", "format": "text" },
+                    "doi": { "label": "DOI", "format": "text" },
+                    "open_access_pdf_url": { "label": "PDF", "format": "link" },
+                    "source": { "label": "Source", "format": "text" }
                 }
             }
         }
