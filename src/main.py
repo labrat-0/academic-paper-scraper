@@ -42,7 +42,10 @@ async def main() -> None:
         max_results = config.max_results
         if is_at_home and not is_paying:
             max_results = min(max_results, _FREE_TIER_LIMIT)
-            logger.info("Free tier: limiting to %d results", max_results)
+            logger.info(
+                "Free tier: limiting to %d results. Subscribe for up to 500.",
+                max_results,
+            )
 
         # Status message
         source = config.resolve_source()
@@ -106,6 +109,7 @@ async def main() -> None:
             state["total_pushed"] = total_pushed
 
         logger.info("Scraping complete. Total records: %d", total_pushed)
-        await Actor.set_status_message(
-            f"Done! Found {total_pushed} paper(s)."
-        )
+        done_msg = f"Done! Found {total_pushed} paper(s)."
+        if is_at_home and not is_paying and total_pushed >= _FREE_TIER_LIMIT:
+            done_msg += f" Free tier limit ({_FREE_TIER_LIMIT}) reached. Subscribe for up to 500 results."
+        await Actor.set_status_message(done_msg)

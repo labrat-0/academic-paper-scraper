@@ -166,28 +166,65 @@ class AcademicPaperScraper:
     # ------------------------------------------------------------------
 
     async def _search(self) -> AsyncGenerator[dict, None]:
-        """Keyword search across the configured source."""
+        """Keyword search across the configured source, with optional batch queries."""
+        queries = self._config.queries_list or [self._config.query]
         source = self._config.resolve_source()
-        logger.info("Search mode: source=%s, query='%s'", source, self._config.query)
+        seen_ids: set[str] = set()
 
-        if source == "semantic_scholar":
-            count = 0
-            async for record in self._s2_search():
-                count += 1
-                yield record
+        for query in queries:
+            # Temporarily override query for each iteration
+            original_query = self._config.query
+            self._config.query = query
+            logger.info("Search mode: source=%s, query='%s'", source, query)
 
-            # Fallback: if S2 returned 0 results (likely rate-limited),
-            # try arXiv as a backup source
-            if count == 0 and self._config.query.strip():
-                logger.warning(
-                    "S2 returned 0 results, falling back to arXiv search"
-                )
-                async for record in self._arxiv_search():
+            if source == "semantic_scholar":
+                count = 0
+                async for record in self._s2_search():
+                    dedup_key = (
+                        record.get("semantic_scholar_id")
+                        or record.get("arxiv_id")
+                        or record.get("doi")
+                        or record.get("title", "")
+                    )
+                    if dedup_key and dedup_key in seen_ids:
+                        continue
+                    if dedup_key:
+                        seen_ids.add(dedup_key)
+                    count += 1
                     yield record
 
-        elif source == "arxiv":
-            async for record in self._arxiv_search():
-                yield record
+                # Fallback: if S2 returned 0 results (likely rate-limited),
+                # try arXiv as a backup source
+                if count == 0 and query.strip():
+                    logger.warning(
+                        "S2 returned 0 results, falling back to arXiv search"
+                    )
+                    async for record in self._arxiv_search():
+                        dedup_key = (
+                            record.get("arxiv_id")
+                            or record.get("doi")
+                            or record.get("title", "")
+                        )
+                        if dedup_key and dedup_key in seen_ids:
+                            continue
+                        if dedup_key:
+                            seen_ids.add(dedup_key)
+                        yield record
+
+            elif source == "arxiv":
+                async for record in self._arxiv_search():
+                    dedup_key = (
+                        record.get("arxiv_id")
+                        or record.get("doi")
+                        or record.get("title", "")
+                    )
+                    if dedup_key and dedup_key in seen_ids:
+                        continue
+                    if dedup_key:
+                        seen_ids.add(dedup_key)
+                    yield record
+
+            self._config.query = original_query
 
     async def _s2_search(self) -> AsyncGenerator[dict, None]:
         """Search Semantic Scholar Graph API."""

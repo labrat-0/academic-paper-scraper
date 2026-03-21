@@ -1,51 +1,62 @@
 {
     "title": "Academic Paper Scraper - Input",
-    "description": "Search and retrieve academic papers from Semantic Scholar (226M+ papers), arXiv, and more. Supports keyword search, paper lookup by DOI/arXiv ID/PMID, and citation graph traversal. API-based -- no browser needed, no bot detection issues.",
+    "description": "Search and retrieve academic papers from Semantic Scholar (226M+ papers) and arXiv. Batch search multiple queries in one run. API-based — no browser, no bot detection, no API key required.",
     "type": "object",
     "schemaVersion": 1,
     "properties": {
         "mode": {
-            "sectionCaption": "Search Mode",
-            "sectionDescription": "Choose how to find papers. 'search' finds papers by keywords, 'get_paper' looks up a specific paper by ID, 'citations' retrieves papers that cite or are cited by a given paper.",
-            "title": "Mode",
+            "sectionCaption": "🎯 Scraping Mode",
+            "sectionDescription": "Choose how to find papers: keyword search, direct lookup by ID, or citation graph traversal.",
+            "title": "🎯 Mode",
             "type": "string",
             "description": "Operation mode: 'search' for keyword search, 'get_paper' for lookup by ID, 'citations' for citation graph traversal.",
             "editor": "select",
             "enum": ["search", "get_paper", "citations"],
-            "enumTitles": ["Search by keywords", "Get paper by ID", "Get citations"],
+            "enumTitles": [
+                "🔍 Search — find papers by keywords",
+                "📄 Get Paper — look up a specific paper by DOI / arXiv ID / PMID",
+                "🔗 Citations — traverse the citation graph"
+            ],
             "default": "search"
         },
         "query": {
-            "sectionCaption": "Search Parameters",
-            "sectionDescription": "Provide a search query (for 'search' mode) or a paper identifier (for 'get_paper' and 'citations' modes).",
-            "title": "Search query or Paper ID",
+            "sectionCaption": "🔍 Query",
+            "sectionDescription": "For Search mode: keywords or a phrase. For Get Paper / Citations mode: a paper identifier (DOI, arXiv ID, PubMed ID, or Semantic Scholar ID). Use Queries List below to batch search multiple terms in one run.",
+            "title": "🔍 Search Query or Paper ID",
             "type": "string",
-            "description": "For 'search': keywords like 'transformer attention mechanism'. For 'get_paper'/'citations': a paper ID -- DOI (10.1234/...), arXiv ID (2301.12345), PubMed ID (PMID:12345678), or Semantic Scholar ID (a1b2c3...).",
+            "description": "For 'search': keywords like 'transformer attention mechanism'. For 'get_paper'/'citations': a paper ID — DOI (10.1234/...), arXiv ID (2301.12345), PubMed ID (PMID:12345678), or Semantic Scholar ID.",
             "editor": "textfield",
             "prefill": "transformer attention mechanism"
         },
+        "queriesList": {
+            "title": "🔍 Queries List (Batch Search)",
+            "type": "array",
+            "description": "Run multiple search queries in a single job — results are merged and deduplicated by paper ID. Overrides the single Query field when provided. Ideal for systematic reviews, topic mapping, and research monitoring. Example: [\"CRISPR gene editing\", \"base editing\", \"prime editing\"]",
+            "editor": "json",
+            "prefill": []
+        },
         "source": {
-            "title": "Source",
+            "title": "📚 Source",
             "type": "string",
-            "description": "Data source for search. 'semantic_scholar' searches 226M+ papers across all fields. 'arxiv' searches arXiv preprints (best for physics, CS, math). 'auto' uses Semantic Scholar for general queries and arXiv for category-specific searches.",
+            "description": "Data source. 'semantic_scholar' searches 226M+ papers across all fields. 'arxiv' searches 2.4M+ preprints (best for physics, CS, math). 'auto' uses Semantic Scholar for general queries and arXiv for category-specific searches.",
             "editor": "select",
             "enum": ["auto", "semantic_scholar", "arxiv"],
-            "enumTitles": ["Auto (recommended)", "Semantic Scholar", "arXiv"],
+            "enumTitles": ["⚡ Auto (recommended)", "🧠 Semantic Scholar (226M+ papers)", "📑 arXiv (preprints)"],
             "default": "auto"
         },
         "citationDirection": {
-            "title": "Citation direction",
+            "title": "🔗 Citation Direction",
             "type": "string",
             "description": "For 'citations' mode only. 'citing' returns papers that cite the target. 'cited_by' returns papers the target references.",
             "editor": "select",
             "enum": ["citing", "cited_by"],
-            "enumTitles": ["Papers citing this paper", "Papers this paper cites"],
+            "enumTitles": ["📥 Papers citing this paper", "📤 Papers this paper cites (references)"],
             "default": "citing"
         },
         "yearFrom": {
-            "sectionCaption": "Filters",
-            "sectionDescription": "Narrow results by publication year, fields of study, or open access availability.",
-            "title": "Year from",
+            "sectionCaption": "📅 Filters",
+            "sectionDescription": "Narrow results by publication year, field of study, or open access availability.",
+            "title": "📅 Year From",
             "type": "integer",
             "description": "Filter papers published on or after this year (e.g. 2020).",
             "editor": "number",
@@ -53,7 +64,7 @@
             "maximum": 2030
         },
         "yearTo": {
-            "title": "Year to",
+            "title": "📅 Year To",
             "type": "integer",
             "description": "Filter papers published on or before this year (e.g. 2025).",
             "editor": "number",
@@ -61,32 +72,32 @@
             "maximum": 2030
         },
         "fieldsOfStudy": {
-            "title": "Fields of study",
+            "title": "🏷️ Fields of Study",
             "type": "array",
             "description": "Filter by academic field (Semantic Scholar only). Examples: 'Computer Science', 'Medicine', 'Physics', 'Biology', 'Mathematics', 'Chemistry', 'Engineering'.",
             "editor": "json",
             "default": []
         },
         "openAccessOnly": {
-            "title": "Open access only",
+            "title": "🔓 Open Access Only",
             "type": "boolean",
-            "description": "Only return papers with free full-text PDF available.",
+            "description": "Only return papers with a free full-text PDF available.",
             "editor": "checkbox",
             "default": false
         },
         "arxivCategories": {
-            "title": "arXiv categories",
+            "title": "📑 arXiv Categories",
             "type": "array",
-            "description": "Filter by arXiv category (arXiv source only). Examples: 'cs.AI', 'cs.LG', 'physics.hep-th', 'math.AG', 'q-bio.NC'. See https://arxiv.org/category_taxonomy for full list.",
+            "description": "Filter by arXiv category (arXiv source only). Examples: 'cs.AI', 'cs.LG', 'physics.hep-th', 'math.AG', 'q-bio.NC'. See arxiv.org/category_taxonomy for the full list.",
             "editor": "json",
             "default": []
         },
         "maxResults": {
-            "sectionCaption": "Output Settings",
-            "sectionDescription": "Control how many results are returned.",
-            "title": "Max results",
+            "sectionCaption": "⚙️ Output Settings",
+            "sectionDescription": "Control how many results are returned and what fields to include.",
+            "title": "🔢 Max Results",
             "type": "integer",
-            "description": "Maximum number of papers to return (1-500). Free users are limited to 25 per run.",
+            "description": "Maximum number of papers to return (1–500). Free users are limited to 25 per run. Subscribe for up to 500 results.",
             "editor": "number",
             "default": 100,
             "prefill": 10,
@@ -94,41 +105,41 @@
             "maximum": 500
         },
         "includeAbstract": {
-            "title": "Include abstracts",
+            "title": "📝 Include Abstracts",
             "type": "boolean",
             "description": "Include full paper abstracts in output.",
             "editor": "checkbox",
             "default": true
         },
         "includeTldr": {
-            "title": "Include AI summary (TLDR)",
+            "title": "🤖 Include AI Summary (TLDR)",
             "type": "boolean",
             "description": "Include AI-generated one-sentence summary (Semantic Scholar only, available for ~40% of papers).",
             "editor": "checkbox",
             "default": true
         },
         "includeCitationCounts": {
-            "title": "Include citation counts",
+            "title": "📊 Include Citation Counts",
             "type": "boolean",
-            "description": "Include citation and reference counts for each paper.",
+            "description": "Include citation count, reference count, and influential citation count for each paper.",
             "editor": "checkbox",
             "default": true
         },
         "sortBy": {
-            "sectionCaption": "Advanced Settings",
-            "sectionDescription": "Control sorting and rate limiting.",
-            "title": "Sort by",
+            "sectionCaption": "🔧 Advanced Settings",
+            "sectionDescription": "Control result ordering and API request rate.",
+            "title": "🔃 Sort By",
             "type": "string",
-            "description": "Sort results by relevance or recency.",
+            "description": "Sort results by relevance or publication date.",
             "editor": "select",
             "enum": ["relevance", "date"],
-            "enumTitles": ["Relevance", "Publication date (newest first)"],
+            "enumTitles": ["⭐ Relevance", "📅 Publication Date (newest first)"],
             "default": "relevance"
         },
         "requestIntervalSecs": {
-            "title": "Request interval (seconds)",
+            "title": "⏱️ Request Interval (seconds)",
             "type": "number",
-            "description": "Minimum seconds between API requests. Semantic Scholar allows 1 req/sec without API key. arXiv recommends 3s between requests.",
+            "description": "Minimum seconds between API requests. Semantic Scholar allows 1 req/sec without an API key. arXiv recommends 3s between requests.",
             "editor": "number",
             "default": 3.0,
             "minimum": 0.5,

@@ -1,87 +1,69 @@
 # Academic Paper Scraper
 
-Search and retrieve academic papers from Semantic Scholar (226M+ papers) and arXiv. Get titles, authors, abstracts, AI-generated summaries, citation counts, DOIs, and open access PDFs as clean JSON. API-based -- no browser needed, no bot detection issues, fast and reliable. MCP-ready for AI agent integration.
+Search and retrieve academic papers from Semantic Scholar (226M+ papers) and arXiv. Get titles, abstracts, AI summaries, citation counts, DOIs, and open-access PDFs as clean JSON. Batch search across multiple queries in one run. No API key, no browser, no proxies.
 
 ## What does it do?
 
-Academic Paper Scraper queries the Semantic Scholar Graph API and arXiv API to find, retrieve, and analyze academic papers. It unifies results into a consistent schema regardless of source.
+Academic Paper Scraper queries the Semantic Scholar Graph API and arXiv API to find, retrieve, and analyze academic literature. It unifies results from both sources into a consistent schema — same fields regardless of where the paper came from.
 
-**Three modes:**
+**v1.1.0:** Added batch search (`queriesList`) — run multiple queries in a single job with automatic deduplication by paper ID.
 
-- **Search** -- keyword search across 226M+ papers (Semantic Scholar) or arXiv preprints
-- **Get Paper** -- look up a specific paper by DOI, arXiv ID, PubMed ID, or Semantic Scholar ID
-- **Citations** -- traverse the citation graph: find papers that cite a given paper, or papers it references
+## Who uses this
 
-## Use cases
+- **AI/LLM builders** — collect topic-specific abstracts, TLDRs, and metadata to build RAG pipelines, fine-tune models, or power research assistants without manually downloading papers
+- **Systematic review and meta-analysis teams** — gather hundreds of papers across multiple search queries in one run, deduplicated and ready for screening
+- **Pharma and biotech researchers** — map the drug discovery literature, track clinical trial publications, pull genomics papers by field and date range
+- **Research intelligence teams** — monitor what competitors and academia are publishing; track emerging topics by citation velocity
+- **Developers building research tools** — programmatic access to academic literature via REST API, Python/JS clients, or MCP for AI agent integration
 
-- **Literature review** -- quickly find all papers on a topic with citation counts and AI summaries
-- **Citation analysis** -- map influence networks by traversing citing/cited papers
-- **Research monitoring** -- track new publications in your field
-- **Meta-analysis** -- gather paper metadata at scale for systematic reviews
-- **AI agent tooling** -- give AI agents access to the academic literature via MCP
-- **Competitive research intelligence** -- track what competitors are publishing
+## Features
 
-## What data does it extract?
+- **3 scraping modes:** keyword search, paper lookup by ID, citation graph traversal
+- **Batch search:** run multiple queries in one job — results merged and deduplicated by paper ID
+- **226M+ papers via Semantic Scholar** — covers all academic fields, with citation metrics and AI-generated TLDRs
+- **2.4M+ preprints via arXiv** — all open access, best for physics, CS, math, and adjacent fields
+- **Filters:** publication year range, fields of study, open-access only, arXiv categories
+- **Citation graph:** get all papers citing a work, or the full reference list of any paper
+- **AI summaries (TLDR):** one-sentence AI-generated summaries for ~40% of Semantic Scholar papers
+- **Open access links:** direct PDF URLs when available
+- **No API key required** — works out of the box against public APIs
+- **No proxy costs** — API-based, no browser rendering, no bot detection issues
 
-Each record represents one academic paper:
+---
 
-| Field | Description |
-|-------|-------------|
-| `title` | Paper title |
-| `authors` | List of author names |
-| `year` | Publication year |
-| `publication_date` | Full date (YYYY-MM-DD) |
-| `venue` | Conference or journal name |
-| `journal` | Journal with volume/pages |
-| `abstract` | Full abstract text |
-| `tldr` | AI-generated one-sentence summary (Semantic Scholar, ~40% of papers) |
-| `doi` | Digital Object Identifier |
-| `arxiv_id` | arXiv preprint ID |
-| `pubmed_id` | PubMed ID |
-| `semantic_scholar_id` | Semantic Scholar paper ID |
-| `fields_of_study` | Academic fields (e.g. "Computer Science", "Medicine") |
-| `publication_types` | Type (JournalArticle, Conference, Preprint, etc.) |
-| `citation_count` | Number of citations |
-| `reference_count` | Number of references |
-| `influential_citation_count` | Citations that significantly impacted the citing paper |
-| `is_open_access` | Whether free full-text is available |
-| `open_access_pdf_url` | Direct PDF link (when available) |
-| `external_urls` | Links to Semantic Scholar, arXiv, DOI resolver |
-| `source` | Which API provided this result |
+## Scraping modes
 
-## Input
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `mode` | string | `search` | `search`, `get_paper`, or `citations` |
-| `query` | string | required | Search keywords or paper ID (DOI, arXiv ID, PMID, S2 ID) |
-| `source` | string | `auto` | `auto`, `semantic_scholar`, or `arxiv` |
-| `citationDirection` | string | `citing` | For citations mode: `citing` or `cited_by` |
-| `yearFrom` | integer | - | Filter by publication year (from) |
-| `yearTo` | integer | - | Filter by publication year (to) |
-| `fieldsOfStudy` | array | `[]` | Filter by field (e.g. "Computer Science") |
-| `openAccessOnly` | boolean | `false` | Only return papers with free PDFs |
-| `arxivCategories` | array | `[]` | arXiv category filter (e.g. "cs.AI", "physics.hep-th") |
-| `maxResults` | integer | `100` | Max papers to return (1-500) |
-| `includeAbstract` | boolean | `true` | Include full abstracts |
-| `includeTldr` | boolean | `true` | Include AI summaries |
-| `includeCitationCounts` | boolean | `true` | Include citation metrics |
-| `sortBy` | string | `relevance` | `relevance` or `date` |
-| `requestIntervalSecs` | number | `1.5` | Min seconds between API requests |
-
-### Example: Search for papers
+### Mode 1: Search by keywords
 
 ```json
 {
     "mode": "search",
     "query": "transformer attention mechanism",
-    "maxResults": 20,
     "yearFrom": 2020,
-    "openAccessOnly": true
+    "openAccessOnly": true,
+    "maxResults": 50
 }
 ```
 
-### Example: Look up a paper by DOI
+### Mode 1b: Batch search (v1.1.0)
+
+Run multiple queries in a single job — results merged and deduplicated across all queries:
+
+```json
+{
+    "mode": "search",
+    "queriesList": ["CRISPR gene editing", "base editing", "prime editing"],
+    "yearFrom": 2022,
+    "fieldsOfStudy": ["Biology"],
+    "maxResults": 150
+}
+```
+
+`queriesList` overrides `query` when provided. Ideal for systematic reviews, competitive landscape analysis, and multi-topic monitoring.
+
+### Mode 2: Get paper by ID
+
+Look up any paper by DOI, arXiv ID, PubMed ID, or Semantic Scholar ID. The actor auto-detects the ID type.
 
 ```json
 {
@@ -90,19 +72,23 @@ Each record represents one academic paper:
 }
 ```
 
-### Example: Get citations for "Attention Is All You Need"
+Accepted ID formats: `10.1234/...` (DOI), `2301.12345` (arXiv), `PMID:12345678` (PubMed), 40-char hex (Semantic Scholar).
+
+### Mode 3: Citation graph
+
+Get all papers that cite a given paper (`citing`), or all papers it references (`cited_by`):
 
 ```json
 {
     "mode": "citations",
     "query": "1706.03762",
     "citationDirection": "citing",
-    "maxResults": 50,
-    "yearFrom": 2023
+    "yearFrom": 2023,
+    "maxResults": 100
 }
 ```
 
-### Example: Search arXiv by category
+### Mode 1c: arXiv category search
 
 ```json
 {
@@ -111,99 +97,151 @@ Each record represents one academic paper:
     "source": "arxiv",
     "arxivCategories": ["cs.AI", "cs.CL"],
     "sortBy": "date",
-    "maxResults": 30
+    "maxResults": 50
 }
 ```
 
+---
+
+## Input parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `mode` | string | `search` | `search`, `get_paper`, or `citations` |
+| `query` | string | required | Keywords (search mode) or paper ID (get_paper/citations mode) |
+| `queriesList` | string[] | `[]` | Multiple search queries — merged and deduplicated. Overrides `query`. Search mode only. |
+| `source` | string | `auto` | `auto`, `semantic_scholar`, or `arxiv` |
+| `citationDirection` | string | `citing` | `citing` (who cited it) or `cited_by` (its references). Citations mode only. |
+| `yearFrom` | integer | — | Filter: published on or after this year |
+| `yearTo` | integer | — | Filter: published on or before this year |
+| `fieldsOfStudy` | string[] | `[]` | Filter by field: `Computer Science`, `Medicine`, `Physics`, `Biology`, etc. (S2 only) |
+| `openAccessOnly` | boolean | `false` | Only return papers with a free PDF available |
+| `arxivCategories` | string[] | `[]` | Filter by arXiv category: `cs.AI`, `cs.LG`, `q-bio.NC`, etc. (arXiv source only) |
+| `maxResults` | integer | `100` | Max papers to return (1–500). Free tier capped at 25. |
+| `includeAbstract` | boolean | `true` | Include full abstracts in output |
+| `includeTldr` | boolean | `true` | Include AI-generated summaries (S2 only) |
+| `includeCitationCounts` | boolean | `true` | Include citation, reference, and influential citation counts |
+| `sortBy` | string | `relevance` | `relevance` or `date` (newest first) |
+| `requestIntervalSecs` | number | `3.0` | Seconds between API requests (0.5–10) |
+
+---
+
 ## Output
 
-### Example: Search results (Semantic Scholar)
+Results are saved to the default dataset. Download as JSON, CSV, Excel, or XML from the Output tab.
+
+### Paper fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `title` | string | Paper title |
+| `authors` | string[] | Author names |
+| `year` | integer | Publication year |
+| `publication_date` | string | Full date (YYYY-MM-DD) |
+| `venue` | string | Conference or journal name |
+| `journal` | string | Journal with volume and page numbers |
+| `abstract` | string | Full abstract text |
+| `tldr` | string | AI-generated one-sentence summary (S2 only, ~40% coverage) |
+| `doi` | string | Digital Object Identifier |
+| `arxiv_id` | string | arXiv preprint ID |
+| `pubmed_id` | string | PubMed ID |
+| `semantic_scholar_id` | string | Semantic Scholar paper ID |
+| `corpus_id` | integer | Semantic Scholar Corpus ID |
+| `fields_of_study` | string[] | Academic fields (e.g. `Computer Science`, `Medicine`) |
+| `publication_types` | string[] | Type: `JournalArticle`, `Conference`, `Preprint`, etc. |
+| `citation_count` | integer | Total citations received |
+| `reference_count` | integer | Number of references in the paper |
+| `influential_citation_count` | integer | Citations that significantly impacted the citing paper |
+| `is_open_access` | boolean | Whether a free full-text PDF is available |
+| `open_access_pdf_url` | string | Direct PDF link (when available) |
+| `external_urls` | object | Links to Semantic Scholar, arXiv, DOI resolver |
+| `source` | string | Which API provided this result: `semantic_scholar` or `arxiv` |
+| `scraped_at` | string | ISO 8601 UTC timestamp |
+
+### Example output
 
 ```json
-[
-    {
-        "schema_version": "1.0",
-        "type": "academic_paper",
-        "title": "Attention is All you Need",
-        "authors": ["Ashish Vaswani", "Noam Shazeer", "Niki Parmar", "Jakob Uszkoreit", "Llion Jones", "Aidan N. Gomez", "Lukasz Kaiser", "Illia Polosukhin"],
-        "year": 2017,
-        "publication_date": "2017-06-12",
-        "venue": "Neural Information Processing Systems",
-        "journal": "",
-        "abstract": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks...",
-        "tldr": "A new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely, is proposed.",
-        "doi": "10.48550/arXiv.1706.03762",
-        "arxiv_id": "1706.03762",
-        "pubmed_id": "",
-        "semantic_scholar_id": "204e3073870fae3d05bcbc2f6a8e263d9b72e776",
-        "fields_of_study": ["Computer Science"],
-        "publication_types": ["JournalArticle", "Conference"],
-        "citation_count": 140000,
-        "reference_count": 41,
-        "influential_citation_count": 12000,
-        "is_open_access": true,
-        "open_access_pdf_url": "https://arxiv.org/pdf/1706.03762",
-        "external_urls": {
-            "semantic_scholar": "https://www.semanticscholar.org/paper/204e3073870fae3d05bcbc2f6a8e263d9b72e776",
-            "doi_url": "https://doi.org/10.48550/arXiv.1706.03762",
-            "arxiv_abs": "https://arxiv.org/abs/1706.03762",
-            "arxiv_pdf": "https://arxiv.org/pdf/1706.03762"
-        },
-        "source": "semantic_scholar",
-        "scraped_at": "2025-01-15T12:00:00+00:00"
-    }
-]
+{
+    "schema_version": "1.0",
+    "type": "academic_paper",
+    "title": "Attention is All you Need",
+    "authors": ["Ashish Vaswani", "Noam Shazeer", "Niki Parmar", "Jakob Uszkoreit"],
+    "year": 2017,
+    "publication_date": "2017-06-12",
+    "venue": "Neural Information Processing Systems",
+    "journal": "",
+    "abstract": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks...",
+    "tldr": "A new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely.",
+    "doi": "10.48550/arXiv.1706.03762",
+    "arxiv_id": "1706.03762",
+    "pubmed_id": "",
+    "semantic_scholar_id": "204e3073870fae3d05bcbc2f6a8e263d9b72e776",
+    "corpus_id": 13756489,
+    "fields_of_study": ["Computer Science"],
+    "publication_types": ["JournalArticle", "Conference"],
+    "citation_count": 140000,
+    "reference_count": 41,
+    "influential_citation_count": 12000,
+    "is_open_access": true,
+    "open_access_pdf_url": "https://arxiv.org/pdf/1706.03762",
+    "external_urls": {
+        "semantic_scholar": "https://www.semanticscholar.org/paper/204e3073870fae3d05bcbc2f6a8e263d9b72e776",
+        "doi_url": "https://doi.org/10.48550/arXiv.1706.03762",
+        "arxiv_abs": "https://arxiv.org/abs/1706.03762",
+        "arxiv_pdf": "https://arxiv.org/pdf/1706.03762"
+    },
+    "source": "semantic_scholar",
+    "scraped_at": "2025-03-01T12:00:00+00:00"
+}
 ```
 
-Output is trimmed for readability. Each record includes all fields from the schema.
+---
 
 ## Data sources
 
 ### Semantic Scholar (default)
 
-- **226M+ papers** across all academic fields
-- Best for general searches and citation analysis
-- Provides AI-generated TLDR summaries, citation counts, influential citation counts
-- Accepts DOI, arXiv ID, PubMed ID, and Semantic Scholar ID for lookups
-- Rate limit: 1 req/sec (no API key needed)
+- **226M+ papers** across every academic field
+- Citation counts, reference counts, and **influential citation counts**
+- **AI-generated TLDR summaries** for ~40% of papers
+- Accepts DOI, arXiv ID, PubMed ID, and Semantic Scholar ID for direct lookup
+- Rate limit: 1 req/sec without an API key (built-in compliance)
 
 ### arXiv
 
 - **2.4M+ preprints** in physics, math, CS, quantitative biology, finance, statistics, and engineering
-- Best for finding the latest preprints and category-specific searches
 - All papers are open access with direct PDF links
-- Rate limit: 3 sec between requests recommended
+- Best for finding the latest preprints before peer review
+- Category filtering: `cs.AI`, `cs.LG`, `physics.hep-th`, `q-bio.NC`, etc.
+- No citation data (use Semantic Scholar for citation metrics)
 
-## Limitations
+**When to use each:** Use `auto` (default). It picks Semantic Scholar for general queries and arXiv when you specify `arxivCategories`. Override to `arxiv` explicitly when you need preprints or category-specific filtering.
 
-- **Semantic Scholar rate limits** may slow down large requests. The scraper respects the 1 req/sec limit but S2 may throttle during peak times.
-- **arXiv has no citation data.** Citation counts, reference counts, and TLDR summaries are only available via Semantic Scholar.
-- **TLDR coverage is ~40%.** The AI summary is not available for all papers in Semantic Scholar.
-- **Year filtering on arXiv** is done client-side (arXiv API does not support year ranges natively), so the scraper may need to fetch extra pages to fill the result set.
-- **PubMed direct search is not implemented** in v1. However, Semantic Scholar indexes PubMed papers, so PubMed content is searchable via the Semantic Scholar source. Direct PubMed ID lookup via `get_paper` mode works.
+---
 
 ## Cost
 
-This actor uses **pay-per-event (PPE) pricing**. You pay only for the results you get.
+This actor uses **pay-per-event (PPE) pricing** — you pay only for results you get.
 
-- **$0.50 per 1,000 results** ($0.0005 per result)
-- **No proxy costs** -- API-based, no browser needed
-- Free tier: **25 results per run** (no subscription required)
+- **$0.50 per 1,000 results** ($0.0005 per paper)
+- **No proxy costs** — API-based, no browser, no residential proxies needed
+- **Free tier: 25 results per run** — no subscription required
+- **Paid tier: up to 500 results per run**
 
-Typical run: searching for 100 papers takes about 10 seconds. Cost: $0.05.
+Typical run: 100 papers takes about 10 seconds. Cost: **$0.05**.
 
 ---
 
 ## MCP Integration
 
-This actor works as an MCP tool through Apify's hosted MCP server. No custom server needed.
+This actor works as an MCP tool via Apify's hosted MCP server. AI agents can query academic literature directly — no custom server setup required.
 
 - **Endpoint:** `https://mcp.apify.com?tools=labrat011/academic-paper-scraper`
 - **Auth:** `Authorization: Bearer <APIFY_TOKEN>`
 - **Transport:** Streamable HTTP
 - **Works with:** Claude Desktop, Cursor, VS Code, Windsurf, Warp, Gemini CLI
 
-**Example MCP config (Claude Desktop / Cursor):**
+**Claude Desktop / Cursor config:**
 
 ```json
 {
@@ -218,26 +256,37 @@ This actor works as an MCP tool through Apify's hosted MCP server. No custom ser
 }
 ```
 
-**Agent prompt examples:**
+**Example agent prompts:**
 
-- "Find the 10 most cited papers on CRISPR gene editing published since 2020"
-- "Look up the paper with DOI 10.1038/s41586-021-03819-2 and summarize its findings"
-- "What papers cite 'Attention Is All You Need'? Show me the top 20 by citation count"
-- "Search arXiv for recent papers on quantum error correction in the cs.AI and quant-ph categories"
-
-The agent calls this tool, gets structured JSON with titles, authors, abstracts, citation counts, and AI summaries, and can synthesize literature reviews or identify research trends programmatically.
+- "Find the 20 most-cited papers on CRISPR base editing published since 2021"
+- "Search for papers on 'retrieval augmented generation' and 'knowledge graphs' — combine the results"
+- "Look up the paper at DOI 10.1038/s41586-021-03819-2 and summarize its key findings"
+- "What papers cite 'Attention Is All You Need'? Show me the top 30 by citation count from 2023 onward"
+- "Search arXiv for recent cs.AI and cs.CL papers on instruction tuning, sorted by date"
+- "Gather all open-access papers on mRNA vaccine efficacy from 2020–2024 for a literature review"
 
 ---
 
 ## Technical details
 
-- Python 3.12, async architecture with `httpx.AsyncClient`
-- Semantic Scholar Graph API v1 (no API key required)
+- Python 3.12, async with `httpx.AsyncClient`
+- Semantic Scholar Graph API v1 (no credentials required)
 - arXiv Atom API with XML parsing (`xml.etree.ElementTree`)
 - Automatic paper ID detection: DOI, arXiv ID, PubMed ID, Corpus ID, S2 ID
-- Paginated fetching with rate limiting
+- Paginated fetching with configurable rate limiting
 - Batch push (25 items) for memory efficiency
-- State persistence for resumable runs
+- State persistence for resumable runs across Apify platform migrations
+
+---
+
+## Limitations
+
+- **S2 rate limits** may slow large requests. The scraper respects the 1 req/sec limit but Semantic Scholar may throttle during peak times — built-in retry with exponential backoff handles this.
+- **arXiv has no citation data.** Citation counts, reference counts, and TLDR summaries are only available from Semantic Scholar.
+- **TLDR coverage is ~40%.** Not available for all papers in Semantic Scholar.
+- **Year filtering on arXiv is client-side** — arXiv's API does not support native year ranges, so the scraper fetches extra pages and filters locally.
+- **Max 500 results per run** — Semantic Scholar's API imposes practical limits on unauthenticated bulk access.
+- **`get_paper` and `citations` modes require a single query** — batch via `queriesList` applies to search mode only.
 
 ---
 
@@ -245,27 +294,33 @@ The agent calls this tool, gets structured JSON with titles, authors, abstracts,
 
 ### Which source should I use?
 
-Use `auto` (the default). It picks Semantic Scholar for general searches (largest corpus, richest metadata) and arXiv when you specify arXiv categories. Override to `arxiv` if you specifically want preprints or need arXiv-specific category filtering.
+Use `auto` (the default). It picks Semantic Scholar for general searches and arXiv when you set `arxivCategories`. Override to `arxiv` only when you need preprints or arXiv-specific category filtering.
+
+### How does batch search work?
+
+Set `queriesList` to an array of search terms. The actor runs each query sequentially and merges results into a single dataset, removing duplicates matched by Semantic Scholar paper ID, arXiv ID, DOI, or title. This is the recommended approach for systematic reviews (run all your PICO terms at once) and research monitoring (track multiple topics in a scheduled daily run).
 
 ### Can I search by author?
 
-Yes. Include the author name in your search query, e.g. `"Yann LeCun deep learning"`. Semantic Scholar's relevance ranking considers author names.
+Yes — include the author name in your query: `"Yann LeCun deep learning"`. Semantic Scholar's relevance ranking considers author names. For a precise author search, add the name in quotes: `"\"Yoshua Bengio\" neural networks"`.
 
-### How do I find a specific paper?
+### How do I look up a specific paper?
 
-Use `get_paper` mode with any identifier: DOI (`10.1038/...`), arXiv ID (`2301.12345`), PubMed ID (`PMID:12345678`), or Semantic Scholar ID (40-char hex). The scraper auto-detects the ID type.
+Use `get_paper` mode with any identifier: DOI (`10.1038/...`), arXiv ID (`2301.12345`), PubMed ID (`PMID:12345678`), or Semantic Scholar ID (40-char hex). The actor auto-detects the format.
 
-### What's the difference between `citing` and `cited_by` in citations mode?
+### What's the difference between `citing` and `cited_by`?
 
-- `citing` returns papers that **cite** your target paper (who referenced it later)
-- `cited_by` returns papers that your target paper **references** (its bibliography)
+- `citing` — returns papers that **cite** your target (who referenced it afterward)
+- `cited_by` — returns papers that your target **cites** (its own bibliography)
+
+Use `citing` to find follow-on work and measure influence. Use `cited_by` to trace a paper's intellectual lineage.
 
 ### Can I use this with the Apify API?
 
-Yes. Call the actor via the Apify API and retrieve results programmatically in JSON, CSV, or other formats. Works with the Apify Python and JavaScript clients.
+Yes. Call the actor via the Apify REST API, poll for results, and download in JSON, CSV, Excel, or XML. Works with the Apify Python and JavaScript client libraries.
 
 ---
 
 ## Feedback
 
-Found a bug or have a feature request? Open an issue on the actor's Issues tab in Apify Console.
+Found a bug or have a feature request? Open an issue on the Issues tab in Apify Console.

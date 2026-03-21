@@ -16,6 +16,7 @@ class ScraperInput(BaseModel):
 
     mode: str = "search"  # search, get_paper, citations
     query: str = ""
+    queries_list: list[str] = Field(default_factory=list)
     source: str = "auto"  # auto, semantic_scholar, arxiv
     citation_direction: str = "citing"  # citing, cited_by
 
@@ -42,6 +43,7 @@ class ScraperInput(BaseModel):
         return cls(
             mode=raw.get("mode", "search"),
             query=raw.get("query", ""),
+            queries_list=raw.get("queriesList", []),
             source=raw.get("source", "auto"),
             citation_direction=raw.get("citationDirection", "citing"),
             year_from=raw.get("yearFrom"),
@@ -59,8 +61,12 @@ class ScraperInput(BaseModel):
 
     def validate_input(self) -> str | None:
         """Return error string if input is invalid, else None."""
-        if not self.query.strip():
-            return "Provide a search query or paper ID in the 'query' field."
+        if self.mode == "search":
+            if not self.query.strip() and not self.queries_list:
+                return "Provide a search query in 'query' or a list of queries in 'queriesList'."
+        else:
+            if not self.query.strip():
+                return "Provide a paper ID in the 'query' field."
 
         if self.mode not in ("search", "get_paper", "citations"):
             return f"Invalid mode: '{self.mode}'. Use 'search', 'get_paper', or 'citations'."
