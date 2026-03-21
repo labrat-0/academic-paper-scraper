@@ -72,7 +72,9 @@ class AcademicPaperScraper:
 
     # Retry settings for S2 429 rate-limit responses
     _S2_MAX_RETRIES = 4
-    _S2_BACKOFF_SECS = (10.0, 20.0, 40.0, 60.0)
+    # Faster backoff for unauthenticated requests so arXiv fallback triggers sooner.
+    # With an API key, 429s are rare; these only matter for keyless runs.
+    _S2_BACKOFF_SECS = (3.0, 6.0, 15.0, 30.0)
     _S2_USER_AGENT = (
         "AcademicPaperScraper/1.0 (Apify Actor; "
         "https://apify.com/labrat011/academic-paper-scraper)"
@@ -117,9 +119,8 @@ class AcademicPaperScraper:
             if attempt >= self._S2_MAX_RETRIES:
                 logger.error(
                     "S2 rate limited after %d retries, giving up. "
-                    "Response body: %s",
+                    "Will fall back to arXiv if available.",
                     self._S2_MAX_RETRIES,
-                    resp.text[:500],
                 )
                 return None
 
@@ -134,12 +135,10 @@ class AcademicPaperScraper:
                 wait_secs = self._S2_BACKOFF_SECS[attempt]
 
             logger.warning(
-                "S2 rate limited (429), retry %d/%d in %.1fs. "
-                "Response body: %s",
+                "S2 rate limited (429), retry %d/%d in %.1fs.",
                 attempt + 1,
                 self._S2_MAX_RETRIES,
                 wait_secs,
-                resp.text[:300],
             )
             await asyncio.sleep(wait_secs)
 
