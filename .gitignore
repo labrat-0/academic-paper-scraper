@@ -22,5 +22,3 @@ apify_storage/
 *~
 .DS_Store
 
-# GSD planning artifacts
-.planning/
