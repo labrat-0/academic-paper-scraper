@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 from typing import AsyncGenerator
 from urllib.parse import quote
 
+import re
 import httpx
 
 from .models import PaperRecord, ScraperInput
@@ -73,8 +74,8 @@ class AcademicPaperScraper:
     # Retry settings for S2 429 rate-limit responses.
     # 1 retry with 10s backoff recovers most transient rate limits.
     # After that, arXiv fallback handles the remaining failures.
-    _S2_MAX_RETRIES = 1
-    _S2_BACKOFF_SECS: tuple = (10.0,)
+    _S2_MAX_RETRIES = 3
+    _S2_BACKOFF_SECS: tuple = (10.0, 30.0, 60.0)
     _S2_USER_AGENT = (
         "AcademicPaperScraper/1.0 (Apify Actor; "
         "https://apify.com/labrat011/academic-paper-scraper)"

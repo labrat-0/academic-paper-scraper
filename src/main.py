@@ -110,12 +110,11 @@ async def main() -> None:
 
         logger.info("Scraping complete. Total records: %d", total_pushed)
 
-        # Check for output emptiness - all sources failed
+        # Report 0 results without hard-failing - API sources may be rate-limited
         if total_pushed == 0:
-            err_msg = "All API sources rate-limited or unreachable."
-            logger.error(err_msg)
-            await Actor.set_status_message(f"Error: {err_msg}")
-            await Actor.fail(status_message=err_msg)
+            err_msg = "All API sources returned 0 results (rate-limited or unreachable)."
+            logger.warning(err_msg)
+            await Actor.set_status_message(status_message=err_msg)
             return
 
         done_msg = f"Done! Found {total_pushed} paper(s)."
