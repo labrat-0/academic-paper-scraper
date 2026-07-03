@@ -71,10 +71,10 @@ class AcademicPaperScraper:
     """
 
     # Retry settings for S2 429 rate-limit responses.
-    # 0 retries: on first 429 give up immediately so arXiv fallback triggers fast.
-    # S2 consistently rate-limits on Apify's shared IPs — retrying wastes time.
-    _S2_MAX_RETRIES = 0
-    _S2_BACKOFF_SECS: tuple = ()
+    # 1 retry with 10s backoff recovers most transient rate limits.
+    # After that, arXiv fallback handles the remaining failures.
+    _S2_MAX_RETRIES = 1
+    _S2_BACKOFF_SECS: tuple = (10.0,)
     _S2_USER_AGENT = (
         "AcademicPaperScraper/1.0 (Apify Actor; "
         "https://apify.com/labrat011/academic-paper-scraper)"
@@ -441,6 +441,22 @@ class AcademicPaperScraper:
             params={"fields": _S2_PAPER_FIELDS},
         )
         if resp is None:
+            # S2 failed (rate-limited or error) - fall back to arXiv
+            if id_type == "arxiv" and normalized:
+                logger.warning(
+                    "S2 lookup failed, falling back to arXiv direct lookup for %s",
+                    normalized,
+                )
+                async for record in self._arxiv_get_paper(normalized):
+                    yield record
+                return
+            # For non-arxiv IDs, try arXiv search with the query string
+            logger.warning(
+                "S2 lookup failed, falling back to arXiv search for '%s'",
+                query,
+            )
+            async for record in self._arxiv_search():
+                yield record
             return
 
         if resp.status_code == 404:
@@ -458,6 +474,47 @@ class AcademicPaperScraper:
 
         paper = resp.json()
         record = _s2_paper_to_record(paper, self._config)
+        yield record.model_dump()
+
+    async def _arxiv_get_paper(self, arxiv_id: str) -> AsyncGenerator[dict, None]:
+        """Look up a paper by arXiv ID directly from the arXiv API."""
+        # Strip version suffix if present (e.g., "2101.12345v3" -> "2101.12345")
+        base_id = re.sub(r"v\d+$", "", arxiv_id)
+        params = {
+            "id_list": base_id,
+            "max_results": 1,
+        }
+        await self._rate_limiter.wait()
+        try:
+            resp = await self._client.get(
+                _ARXIV_BASE,
+                params=params,
+                timeout=30,
+            )
+        except httpx.HTTPError as exc:
+            logger.error("arXiv get_paper request failed: %s", exc)
+            return
+
+        if resp.status_code != 200:
+            logger.error(
+                "arXiv get_paper returned %d: %s",
+                resp.status_code,
+                resp.text[:500],
+            )
+            return
+
+        papers = _parse_arxiv_xml(resp.text)
+        if not papers:
+            logger.warning("arXiv paper not found: %s", arxiv_id)
+            yield PaperRecord(
+                title=f"Paper not found: {arxiv_id}",
+                source="arxiv",
+                scraped_at=_now_iso(),
+            ).model_dump()
+            return
+
+        paper = papers[0]
+        record = _arxiv_entry_to_record(paper, self._config)
         yield record.model_dump()
 
     # ------------------------------------------------------------------
@@ -508,6 +565,13 @@ class AcademicPaperScraper:
 
             resp = await self._s2_request(endpoint, params=params)
             if resp is None:
+                # S2 failed - fall back to arXiv search with the query string
+                logger.warning(
+                    "S2 citations failed, falling back to arXiv search for '%s'",
+                    query,
+                )
+                async for record in self._arxiv_search():
+                    yield record
                 return
 
             if resp.status_code == 404:

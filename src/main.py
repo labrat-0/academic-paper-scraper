@@ -109,6 +109,15 @@ async def main() -> None:
             state["total_pushed"] = total_pushed
 
         logger.info("Scraping complete. Total records: %d", total_pushed)
+
+        # Check for output emptiness - all sources failed
+        if total_pushed == 0:
+            err_msg = "All API sources rate-limited or unreachable."
+            logger.error(err_msg)
+            await Actor.set_status_message(f"Error: {err_msg}")
+            await Actor.fail(status_message=err_msg)
+            return
+
         done_msg = f"Done! Found {total_pushed} paper(s)."
         if is_at_home and not is_paying and total_pushed >= _FREE_TIER_LIMIT:
             done_msg += f" Free tier limit ({_FREE_TIER_LIMIT}) reached. Subscribe for up to 500 results."
