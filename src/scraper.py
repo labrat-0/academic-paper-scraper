@@ -57,8 +57,10 @@ _S2_PAPER_FIELDS = ",".join([
 _S2_PAGE_SIZE = 100
 
 # arXiv API
-_ARXIV_BASE = "http://export.arxiv.org/api/query"
+_ARXIV_BASE = "https://export.arxiv.org/api/query"
 _ARXIV_PAGE_SIZE = 100  # arXiv allows up to 2000, but 100 is reasonable
+_ARXIV_MAX_RETRIES = 2
+_ARXIV_BACKOFF: tuple = (5.0, 15.0)
 
 # Atom namespace for arXiv XML parsing
 _ATOM_NS = "http://www.w3.org/2005/Atom"
@@ -142,6 +144,60 @@ class AcademicPaperScraper:
                 wait_secs,
             )
             await asyncio.sleep(wait_secs)
+
+        return None  # should not reach here
+
+    async def _arxiv_request(
+        self,
+        params: dict[str, str | int],
+    ) -> httpx.Response | None:
+        """Make an arXiv API request with retry + backoff.
+
+        Returns the Response on success, or None if all retries are exhausted.
+        """
+        for attempt in range(_ARXIV_MAX_RETRIES + 1):
+            await self._rate_limiter.wait()
+            try:
+                resp = await self._client.get(
+                    _ARXIV_BASE,
+                    params=params,
+                    timeout=30,
+                )
+            except httpx.HTTPError as exc:
+                logger.error(
+                    "arXiv request failed (attempt %d/%d): %s",
+                    attempt + 1, _ARXIV_MAX_RETRIES + 1, exc,
+                )
+                if attempt < _ARXIV_MAX_RETRIES:
+                    await asyncio.sleep(_ARXIV_BACKOFF[attempt])
+                    continue
+                return None
+
+            if resp.status_code == 429 and attempt < _ARXIV_MAX_RETRIES:
+                retry_after = resp.headers.get("Retry-After")
+                wait = float(retry_after) if retry_after else _ARXIV_BACKOFF[attempt]
+                logger.warning(
+                    "arXiv rate limited (429), retry %d/%d in %.1fs",
+                    attempt + 1, _ARXIV_MAX_RETRIES, wait,
+                )
+                await asyncio.sleep(wait)
+                continue
+
+            if resp.status_code != 200:
+                if attempt < _ARXIV_MAX_RETRIES:
+                    logger.warning(
+                        "arXiv returned %d (attempt %d/%d), retrying",
+                        resp.status_code, attempt + 1, _ARXIV_MAX_RETRIES,
+                    )
+                    await asyncio.sleep(_ARXIV_BACKOFF[attempt])
+                    continue
+                logger.error(
+                    "arXiv returned %d after %d retries, giving up",
+                    resp.status_code, _ARXIV_MAX_RETRIES,
+                )
+                return None
+
+            return resp
 
         return None  # should not reach here
 
@@ -272,7 +328,8 @@ class AcademicPaperScraper:
 
             # Soft rate limit detection: if first page returns 0 results
             # for a non-trivial query, S2 is likely shadow-limiting us.
-            # Retry up to 2 times with longer waits.
+            # Retry up to 2 times with longer waits using direct requests
+            # (bypass _s2_request's own retry chain to avoid 3× nesting).
             if not papers and offset == 0 and len(query) > 2:
                 soft_retried = False
                 for soft_attempt in range(2):
@@ -283,20 +340,35 @@ class AcademicPaperScraper:
                         soft_attempt + 1, wait, total_available,
                     )
                     await asyncio.sleep(wait)
-                    resp = await self._s2_request(
-                        f"{_S2_BASE}/paper/search",
-                        params=params,
-                    )
-                    if resp is None:
-                        return
-                    if resp.status_code != 200:
-                        logger.error("S2 search returned %d: %s", resp.status_code, resp.text[:500])
-                        return
-                    data = resp.json()
-                    total_available = data.get("total", 0)
-                    papers = data.get("data", [])
-                    if papers:
-                        soft_retried = True
+                    # Direct request — no _s2_request nesting
+                    for direct_attempt in range(2):
+                        await self._rate_limiter.wait()
+                        try:
+                            direct_resp = await self._client.get(
+                                f"{_S2_BASE}/paper/search",
+                                params=params,
+                                timeout=30,
+                                headers={"User-Agent": self._S2_USER_AGENT},
+                            )
+                        except httpx.HTTPError:
+                            if direct_attempt < 1:
+                                await asyncio.sleep(5.0)
+                                continue
+                            break
+                        if direct_resp.status_code == 200:
+                            data = direct_resp.json()
+                            total_available = data.get("total", 0)
+                            new_papers = data.get("data", [])
+                            if new_papers:
+                                papers = new_papers
+                                soft_retried = True
+                                break
+                        # Non-200 or empty: short backoff then retry
+                        if direct_attempt < 1:
+                            await asyncio.sleep(10.0)
+                            continue
+                        break
+                    if soft_retried:
                         break
 
                 if not papers:
@@ -318,6 +390,8 @@ class AcademicPaperScraper:
                 if total_yielded >= max_results:
                     return
                 record = _s2_paper_to_record(paper, self._config)
+                if record is None:
+                    continue
                 if self._config.open_access_only and not record.is_open_access:
                     continue
                 yield record.model_dump()
@@ -353,14 +427,8 @@ class AcademicPaperScraper:
                 params["sortOrder"] = "descending"
 
             await self._rate_limiter.wait()
-            try:
-                resp = await self._client.get(
-                    _ARXIV_BASE,
-                    params=params,
-                    timeout=30,
-                )
-            except httpx.HTTPError as exc:
-                logger.error("arXiv search request failed: %s", exc)
+            resp = await self._arxiv_request(params)
+            if resp is None:
                 return
 
             if resp.status_code != 200:
@@ -471,10 +539,21 @@ class AcademicPaperScraper:
 
         if resp.status_code != 200:
             logger.error("S2 paper lookup returned %d: %s", resp.status_code, resp.text[:500])
+            # Fall back to arXiv on S2 errors too, not just rate-limit exhaustion
+            if id_type == "arxiv" and normalized:
+                logger.warning("S2 lookup returned %d, falling back to arXiv for %s", resp.status_code, normalized)
+                async for record in self._arxiv_get_paper(normalized):
+                    yield record
+            else:
+                logger.warning("S2 lookup returned %d, falling back to arXiv search for '%s'", resp.status_code, query)
+                async for record in self._arxiv_search():
+                    yield record
             return
 
         paper = resp.json()
         record = _s2_paper_to_record(paper, self._config)
+        if record is None:
+            return
         yield record.model_dump()
 
     async def _arxiv_get_paper(self, arxiv_id: str) -> AsyncGenerator[dict, None]:
@@ -486,14 +565,8 @@ class AcademicPaperScraper:
             "max_results": 1,
         }
         await self._rate_limiter.wait()
-        try:
-            resp = await self._client.get(
-                _ARXIV_BASE,
-                params=params,
-                timeout=30,
-            )
-        except httpx.HTTPError as exc:
-            logger.error("arXiv get_paper request failed: %s", exc)
+        resp = await self._arxiv_request(params)
+        if resp is None:
             return
 
         if resp.status_code != 200:
@@ -566,13 +639,23 @@ class AcademicPaperScraper:
 
             resp = await self._s2_request(endpoint, params=params)
             if resp is None:
-                # S2 failed - fall back to arXiv search with the query string
-                logger.warning(
-                    "S2 citations failed, falling back to arXiv search for '%s'",
-                    query,
-                )
-                async for record in self._arxiv_search():
-                    yield record
+                # S2 failed - fall back to arXiv where sensible
+                id_type, normalized = detect_paper_id_type(query)
+                if id_type == "arxiv" and normalized:
+                    logger.warning(
+                        "S2 citations failed, falling back to arXiv direct lookup for %s",
+                        normalized,
+                    )
+                    async for record in self._arxiv_get_paper(normalized):
+                        yield record
+                else:
+                    logger.warning(
+                        "S2 citations unavailable for '%s' (arXiv citation graph not available). "
+                        "Will try arXiv keyword search as a rough fallback.",
+                        query,
+                    )
+                    async for record in self._arxiv_search():
+                        yield record
                 return
 
             if resp.status_code == 404:
@@ -581,6 +664,16 @@ class AcademicPaperScraper:
 
             if resp.status_code != 200:
                 logger.error("S2 citations returned %d: %s", resp.status_code, resp.text[:500])
+                # Fall back to arXiv on S2 errors too
+                id_type, normalized = detect_paper_id_type(query)
+                if id_type == "arxiv" and normalized:
+                    logger.warning("S2 citations returned %d, falling back to arXiv for %s", resp.status_code, normalized)
+                    async for record in self._arxiv_get_paper(normalized):
+                        yield record
+                else:
+                    logger.warning("S2 citations returned %d, falling back to arXiv search for '%s'", resp.status_code, query)
+                    async for record in self._arxiv_search():
+                        yield record
                 return
 
             data = resp.json()
@@ -609,6 +702,8 @@ class AcademicPaperScraper:
                     continue
 
                 record = _s2_paper_to_record(paper, self._config)
+                if record is None:
+                    continue
                 yield record.model_dump()
                 total_yielded += 1
 
@@ -626,8 +721,14 @@ class AcademicPaperScraper:
 # ---------------------------------------------------------------------------
 
 
-def _s2_paper_to_record(paper: dict, config: ScraperInput) -> PaperRecord:
-    """Convert a Semantic Scholar API paper object to a PaperRecord."""
+def _s2_paper_to_record(paper: dict, config: ScraperInput) -> PaperRecord | None:
+    """Convert a Semantic Scholar API paper object to a PaperRecord.
+
+    Returns None if the paper is not a valid dict (API edge case).
+    """
+    if not isinstance(paper, dict):
+        logger.warning("S2 returned non-dict paper entry: %s", type(paper).__name__)
+        return None
     ext_ids = paper.get("externalIds") or {}
     journal_info = paper.get("journal") or {}
     oa_pdf = paper.get("openAccessPdf") or {}

@@ -71,34 +71,45 @@ async def main() -> None:
         ) as http_client:
             scraper = AcademicPaperScraper(config, http_client)
 
-            async for record in scraper.run():
-                if total_pushed >= max_results:
-                    logger.info(
-                        "Reached max results (%d), stopping", max_results
-                    )
-                    break
-
-                batch.append(record)
-
-                if len(batch) >= _BATCH_SIZE:
-                    # Guard: don't exceed max_results
-                    remaining = max_results - total_pushed
-                    flush = batch[:remaining]
-                    await dataset.push_data(flush)
-                    total_pushed += len(flush)
-                    state["total_pushed"] = total_pushed
-                    await Actor.set_status_message(
-                        f"Found {total_pushed} paper(s)..."
-                    )
-                    logger.info(
-                        "Pushed batch of %d (total: %d)",
-                        len(flush),
-                        total_pushed,
-                    )
-                    batch = []
-
+            try:
+                async for record in scraper.run():
                     if total_pushed >= max_results:
+                        logger.info(
+                            "Reached max results (%d), stopping", max_results
+                        )
                         break
+
+                    batch.append(record)
+
+                    if len(batch) >= _BATCH_SIZE:
+                        # Guard: don't exceed max_results
+                        remaining = max_results - total_pushed
+                        flush = batch[:remaining]
+                        await dataset.push_data(flush)
+                        total_pushed += len(flush)
+                        state["total_pushed"] = total_pushed
+                        await Actor.set_status_message(
+                            f"Found {total_pushed} paper(s)..."
+                        )
+                        logger.info(
+                            "Pushed batch of %d (total: %d)",
+                            len(flush),
+                            total_pushed,
+                        )
+                        batch = []
+
+                        if total_pushed >= max_results:
+                            break
+            except Exception as exc:
+                logger.exception("Unhandled exception during scraping: %s", exc)
+                await Actor.set_status_message(f"Error: {exc}")
+                # Flush anything we've accumulated before the crash
+                if batch:
+                    await dataset.push_data(batch)
+                    total_pushed += len(batch)
+                if total_pushed > 0:
+                    state["total_pushed"] = total_pushed
+                return
 
         # Flush remaining
         if batch and total_pushed < max_results:
