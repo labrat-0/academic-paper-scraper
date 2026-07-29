@@ -104,6 +104,16 @@
             "minimum": 1,
             "maximum": 500
         },
+        "maxResultsPerQuery": {
+            "title": "🔢 Max Results Per Query",
+            "type": "integer",
+            "description": "In batch mode (queriesList), cap results for EACH query so every topic gets its share. The global Max Results still caps the total. Set Max Results ≥ perQuery × number-of-queries to fully cover every topic. 0 = use Max Results as the per-query cap too.",
+            "editor": "number",
+            "default": 50,
+            "prefill": 50,
+            "minimum": 0,
+            "maximum": 500
+        },
         "includeAbstract": {
             "title": "📝 Include Abstracts",
             "type": "boolean",
@@ -144,6 +154,13 @@
             "default": 3.0,
             "minimum": 0.5,
             "maximum": 10
+        },
+        "apiKey": {
+            "title": "🔑 Semantic Scholar API Key (optional)",
+            "type": "string",
+            "description": "Optional Semantic Scholar API key. Eliminates most rate-limit (429) errors and enables higher throughput. Request one free at https://www.semanticscholar.org/product/api. Leave blank to use the shared pool (slower, more 429s — the actor falls back to arXiv automatically).",
+            "editor": "textfield",
+            "isSecret": true
         }
     },
     "required": ["query"],

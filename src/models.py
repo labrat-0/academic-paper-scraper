@@ -29,6 +29,7 @@ class ScraperInput(BaseModel):
 
     # Output settings
     max_results: int = Field(default=100, ge=1, le=500)
+    max_results_per_query: int = Field(default=0, ge=0, le=500)  # 0 = fall back to max_results
     include_abstract: bool = True
     include_tldr: bool = True
     include_citation_counts: bool = True
@@ -36,6 +37,7 @@ class ScraperInput(BaseModel):
 
     # Advanced
     request_interval_secs: float = Field(default=3.0, ge=0.5, le=10.0)
+    api_key: str = Field(default="")  # optional Semantic Scholar API key
 
     @classmethod
     def from_actor_input(cls, raw: dict[str, Any]) -> ScraperInput:
@@ -52,11 +54,13 @@ class ScraperInput(BaseModel):
             open_access_only=raw.get("openAccessOnly", False),
             arxiv_categories=raw.get("arxivCategories", []),
             max_results=raw.get("maxResults", 100),
+            max_results_per_query=raw.get("maxResultsPerQuery", 0),
             include_abstract=raw.get("includeAbstract", True),
             include_tldr=raw.get("includeTldr", True),
             include_citation_counts=raw.get("includeCitationCounts", True),
             sort_by=raw.get("sortBy", "relevance"),
             request_interval_secs=raw.get("requestIntervalSecs", 3.0),
+            api_key=raw.get("apiKey", ""),
         )
 
     def validate_input(self) -> str | None:

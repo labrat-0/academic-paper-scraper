@@ -117,12 +117,14 @@ Get all papers that cite a given paper (`citing`), or all papers it references (
 | `fieldsOfStudy` | string[] | `[]` | Filter by field: `Computer Science`, `Medicine`, `Physics`, `Biology`, etc. (S2 only) |
 | `openAccessOnly` | boolean | `false` | Only return papers with a free PDF available |
 | `arxivCategories` | string[] | `[]` | Filter by arXiv category: `cs.AI`, `cs.LG`, `q-bio.NC`, etc. (arXiv source only) |
-| `maxResults` | integer | `100` | Max papers to return (1–500). Free tier capped at 25. |
+| `maxResults` | integer | `100` | Max papers to return in total (1–500). Free tier capped at 25. |
+| `maxResultsPerQuery` | integer | `50` | Batch mode: per-query result cap so every topic gets its share. `0` = use `maxResults`. Set `maxResults` ≥ perQuery × #queries to cover every topic. |
 | `includeAbstract` | boolean | `true` | Include full abstracts in output |
 | `includeTldr` | boolean | `true` | Include AI-generated summaries (S2 only) |
 | `includeCitationCounts` | boolean | `true` | Include citation, reference, and influential citation counts |
 | `sortBy` | string | `relevance` | `relevance` or `date` (newest first) |
 | `requestIntervalSecs` | number | `3.0` | Seconds between API requests (0.5–10) |
+| `apiKey` | string | `""` | Optional Semantic Scholar API key. Eliminates most 429 rate-limit errors. [Request one free](https://www.semanticscholar.org/product/api). |
 
 ---
 
@@ -281,7 +283,7 @@ This actor works as an MCP tool via Apify's hosted MCP server. AI agents can que
 
 ## Limitations
 
-- **S2 rate limits** may slow large requests. The scraper respects the 1 req/sec limit but Semantic Scholar may throttle during peak times — built-in retry with exponential backoff handles this.
+- **S2 rate limits** may slow large requests. The scraper respects the 1 req/sec limit but Semantic Scholar may throttle during peak times. Without an `apiKey` it retries once then falls back to arXiv within seconds; supply an `apiKey` to eliminate most 429 errors and retry longer.
 - **arXiv has no citation data.** Citation counts, reference counts, and TLDR summaries are only available from Semantic Scholar.
 - **TLDR coverage is ~40%.** Not available for all papers in Semantic Scholar.
 - **Year filtering on arXiv is client-side** — arXiv's API does not support native year ranges, so the scraper fetches extra pages and filters locally.
@@ -298,7 +300,7 @@ Use `auto` (the default). It picks Semantic Scholar for general searches and arX
 
 ### How does batch search work?
 
-Set `queriesList` to an array of search terms. The actor runs each query sequentially and merges results into a single dataset, removing duplicates matched by Semantic Scholar paper ID, arXiv ID, DOI, or title. This is the recommended approach for systematic reviews (run all your PICO terms at once) and research monitoring (track multiple topics in a scheduled daily run).
+Set `queriesList` to an array of search terms. The actor runs each query sequentially and merges results into a single dataset, removing duplicates matched by Semantic Scholar paper ID, arXiv ID, DOI, or title. Each query gets its own budget of `maxResultsPerQuery` results (default 50) so no topic is starved, while `maxResults` caps the combined total — set `maxResults` ≥ `maxResultsPerQuery` × number-of-queries to fully cover every topic. This is the recommended approach for systematic reviews (run all your PICO terms at once) and research monitoring (track multiple topics in a scheduled daily run).
 
 ### Can I search by author?
 

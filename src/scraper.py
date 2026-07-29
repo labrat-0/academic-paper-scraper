@@ -73,11 +73,14 @@ class AcademicPaperScraper:
     Supports Semantic Scholar and arXiv APIs with unified PaperRecord output.
     """
 
-    # Retry settings for S2 429 rate-limit responses.
-    # 1 retry with 10s backoff recovers most transient rate limits.
-    # After that, arXiv fallback handles the remaining failures.
-    _S2_MAX_RETRIES = 3
-    _S2_BACKOFF_SECS: tuple = (10.0, 30.0, 60.0)
+    # Retry settings for S2 429 rate-limit responses. Set per-instance in
+    # __init__ based on whether an API key is present:
+    #   - no key:  fail fast (1 retry, 4s) so arXiv fallback kicks in quickly.
+    #   - with key: retry more (rate limits are rarer and worth waiting out).
+    _S2_NOKEY_MAX_RETRIES = 1
+    _S2_NOKEY_BACKOFF: tuple = (4.0,)
+    _S2_KEY_MAX_RETRIES = 3
+    _S2_KEY_BACKOFF: tuple = (2.0, 5.0, 10.0)
     _S2_USER_AGENT = (
         "AcademicPaperScraper/1.0 (Apify Actor; "
         "https://apify.com/labrat011/academic-paper-scraper)"
@@ -91,6 +94,13 @@ class AcademicPaperScraper:
         self._config = config
         self._client = http_client
         self._rate_limiter = RateLimiter(config.request_interval_secs)
+        # Tune S2 retry/backoff based on API key presence.
+        if config.api_key:
+            self._S2_MAX_RETRIES = self._S2_KEY_MAX_RETRIES
+            self._S2_BACKOFF_SECS = self._S2_KEY_BACKOFF
+        else:
+            self._S2_MAX_RETRIES = self._S2_NOKEY_MAX_RETRIES
+            self._S2_BACKOFF_SECS = self._S2_NOKEY_BACKOFF
 
     async def _s2_request(
         self,
@@ -104,12 +114,15 @@ class AcademicPaperScraper:
         """
         for attempt in range(self._S2_MAX_RETRIES + 1):
             await self._rate_limiter.wait()
+            headers = {"User-Agent": self._S2_USER_AGENT}
+            if self._config.api_key:
+                headers["x-api-key"] = self._config.api_key
             try:
                 resp = await self._client.get(
                     url,
                     params=params,
                     timeout=30,
-                    headers={"User-Agent": self._S2_USER_AGENT},
+                    headers=headers,
                 )
             except httpx.HTTPError as exc:
                 logger.error("S2 request failed: %s", exc)
@@ -227,34 +240,55 @@ class AcademicPaperScraper:
         source = self._config.resolve_source()
         seen_ids: set[str] = set()
 
+        # Per-query result cap. In batch mode each query gets its own budget so
+        # later queries aren't starved by the global max_results ceiling (which
+        # main.py still enforces on the total). 0 = fall back to max_results.
+        per_query = self._config.max_results_per_query or self._config.max_results
+        original_max = self._config.max_results
+
         for query in queries:
-            # Temporarily override query for each iteration
+            # Temporarily override query + cap that the generators read.
             original_query = self._config.query
             self._config.query = query
+            self._config.max_results = per_query
             logger.info("Search mode: source=%s, query='%s'", source, query)
 
-            if source == "semantic_scholar":
-                count = 0
-                async for record in self._s2_search():
-                    dedup_key = (
-                        record.get("semantic_scholar_id")
-                        or record.get("arxiv_id")
-                        or record.get("doi")
-                        or record.get("title", "")
-                    )
-                    if dedup_key and dedup_key in seen_ids:
-                        continue
-                    if dedup_key:
-                        seen_ids.add(dedup_key)
-                    count += 1
-                    yield record
+            try:
+                if source == "semantic_scholar":
+                    count = 0
+                    async for record in self._s2_search():
+                        dedup_key = (
+                            record.get("semantic_scholar_id")
+                            or record.get("arxiv_id")
+                            or record.get("doi")
+                            or record.get("title", "")
+                        )
+                        if dedup_key and dedup_key in seen_ids:
+                            continue
+                        if dedup_key:
+                            seen_ids.add(dedup_key)
+                        count += 1
+                        yield record
 
-                # Fallback: if S2 returned 0 results (likely rate-limited),
-                # try arXiv as a backup source
-                if count == 0 and query.strip():
-                    logger.warning(
-                        "S2 returned 0 results, falling back to arXiv search"
-                    )
+                    # Fallback: if S2 returned 0 results (likely rate-limited),
+                    # try arXiv as a backup source
+                    if count == 0 and query.strip():
+                        logger.warning(
+                            "S2 returned 0 results, falling back to arXiv search"
+                        )
+                        async for record in self._arxiv_search():
+                            dedup_key = (
+                                record.get("arxiv_id")
+                                or record.get("doi")
+                                or record.get("title", "")
+                            )
+                            if dedup_key and dedup_key in seen_ids:
+                                continue
+                            if dedup_key:
+                                seen_ids.add(dedup_key)
+                            yield record
+
+                elif source == "arxiv":
                     async for record in self._arxiv_search():
                         dedup_key = (
                             record.get("arxiv_id")
@@ -266,21 +300,10 @@ class AcademicPaperScraper:
                         if dedup_key:
                             seen_ids.add(dedup_key)
                         yield record
-
-            elif source == "arxiv":
-                async for record in self._arxiv_search():
-                    dedup_key = (
-                        record.get("arxiv_id")
-                        or record.get("doi")
-                        or record.get("title", "")
-                    )
-                    if dedup_key and dedup_key in seen_ids:
-                        continue
-                    if dedup_key:
-                        seen_ids.add(dedup_key)
-                    yield record
-
-            self._config.query = original_query
+            finally:
+                # Always restore the query and global cap for the next iteration.
+                self._config.query = original_query
+                self._config.max_results = original_max
 
     async def _s2_search(self) -> AsyncGenerator[dict, None]:
         """Search Semantic Scholar Graph API."""
