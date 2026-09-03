@@ -22,3 +22,31 @@ apify_storage/
 *~
 .DS_Store
 
+# Private notes, never commit (RatLabs standard)
+# Public repos are customer-facing. Internal planning and launch prep are
+# kept outside the repo.
+DEPLOYMENT_INFO.md
+MONETIZATION.md
+PRICING_STRATEGY.md
+docs/MONETIZATION.md
+docs/superpowers/
+.planning/
+.claude/
+*.private.md
+
+# Tests never ship. They map what we check for, which shows how the actor
+# works and where it is fragile. Keep them local.
+tests/
+test/
+test_*.py
+test_*.json
+*_test.py
+conftest.py
+pytest.ini
+.pytest_cache/
+__snapshots__/
+fixtures/
+
+# NOT ignored, these are customer-facing product:
+#   workflows/   published workflow templates (n8n, Make, Zapier, MCP)
+#   examples/    published usage examples
