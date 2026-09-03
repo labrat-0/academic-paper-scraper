@@ -83,7 +83,7 @@ async def main() -> None:
                         # Guard: don't exceed max_results
                         remaining = max_results - total_pushed
                         flush = batch[:remaining]
-                        await Actor.push_data(flush, charged_event_name="apify-default-dataset-item")
+                        await Actor.push_data(flush)
                         total_pushed += len(flush)
                         state["total_pushed"] = total_pushed
                         await Actor.set_status_message(
@@ -103,7 +103,7 @@ async def main() -> None:
                 await Actor.set_status_message(f"Error: {exc}")
                 # Flush anything we've accumulated before the crash
                 if batch:
-                    await Actor.push_data(batch, charged_event_name="apify-default-dataset-item")
+                    await Actor.push_data(batch)
                     total_pushed += len(batch)
                 if total_pushed > 0:
                     state["total_pushed"] = total_pushed
@@ -113,7 +113,7 @@ async def main() -> None:
         if batch and total_pushed < max_results:
             remaining = max_results - total_pushed
             flush = batch[:remaining]
-            await Actor.push_data(flush, charged_event_name="apify-default-dataset-item")
+            await Actor.push_data(flush)
             total_pushed += len(flush)
             state["total_pushed"] = total_pushed
 
