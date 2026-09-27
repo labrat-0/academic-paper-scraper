@@ -1,3 +1,5 @@
+<img src="https://apify-image-uploads-prod.s3.us-east-1.amazonaws.com/wCP1WauwRX2Gr3Gir-actor-sPY7QGq3ClozbqCVe-P71nEelMlf-academic-paper-scraper.png" alt="Academic Paper Scraper logo" width="120">
+
 # Academic Paper Scraper
 
 Search and retrieve academic papers from Semantic Scholar (226M+ papers) and arXiv. Get titles, abstracts, AI summaries, citation counts, DOIs, and open-access PDFs as clean JSON. Batch search across multiple queries in one run. No API key, no browser, no proxies.
