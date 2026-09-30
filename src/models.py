@@ -6,9 +6,13 @@ All output fields have defaults -- no missing keys in output.
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from pydantic import BaseModel, Field
+
+# Minimum spacing between requests when running on the built-in S2 key.
+BUILTIN_KEY_MIN_INTERVAL_SECS = 1.1
 
 
 class ScraperInput(BaseModel):
@@ -42,6 +46,14 @@ class ScraperInput(BaseModel):
     @classmethod
     def from_actor_input(cls, raw: dict[str, Any]) -> ScraperInput:
         """Map camelCase actor input keys to snake_case model fields."""
+        request_interval_secs = raw.get("requestIntervalSecs", 3.0)
+        # A user's own key wins. Otherwise use the actor's built-in key, which
+        # allows 1 request per second, so keep requests at least that far apart.
+        api_key = (raw.get("apiKey") or "").strip()
+        if not api_key:
+            api_key = os.getenv("S2_API_KEY", "").strip()
+            if api_key and request_interval_secs < BUILTIN_KEY_MIN_INTERVAL_SECS:
+                request_interval_secs = BUILTIN_KEY_MIN_INTERVAL_SECS
         return cls(
             mode=raw.get("mode", "search"),
             query=raw.get("query", ""),
@@ -59,8 +71,8 @@ class ScraperInput(BaseModel):
             include_tldr=raw.get("includeTldr", True),
             include_citation_counts=raw.get("includeCitationCounts", True),
             sort_by=raw.get("sortBy", "relevance"),
-            request_interval_secs=raw.get("requestIntervalSecs", 3.0),
-            api_key=raw.get("apiKey", ""),
+            request_interval_secs=request_interval_secs,
+            api_key=api_key,
         )
 
     def validate_input(self) -> str | None:

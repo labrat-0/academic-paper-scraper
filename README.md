@@ -122,11 +122,11 @@ Get all papers that cite a given paper (`citing`), or all papers it references (
 | `maxResults` | integer | `100` | Max papers to return in total (1–500). Free tier capped at 25. |
 | `maxResultsPerQuery` | integer | `50` | Batch mode: per-query result cap so every topic gets its share. `0` = use `maxResults`. Set `maxResults` ≥ perQuery × #queries to cover every topic. |
 | `includeAbstract` | boolean | `true` | Include full abstracts in output |
-| `includeTldr` | boolean | `true` | Include AI-generated summaries (S2 only) |
+| `includeTldr` | boolean | `true` | Include AI-generated summaries (S2 search and paper lookup only, not citations mode) |
 | `includeCitationCounts` | boolean | `true` | Include citation, reference, and influential citation counts |
 | `sortBy` | string | `relevance` | `relevance` or `date` (newest first) |
 | `requestIntervalSecs` | number | `3.0` | Seconds between API requests (0.5–10) |
-| `apiKey` | string | `""` | Optional Semantic Scholar API key. Eliminates most 429 rate-limit errors. [Request one free](https://www.semanticscholar.org/product/api). |
+| `apiKey` | string | `""` | Optional. The actor already runs on its own Semantic Scholar API key, so you can leave this blank. Add your own key for a dedicated rate limit on very large jobs. [Request one free](https://www.semanticscholar.org/product/api). |
 
 ---
 
@@ -145,7 +145,7 @@ Results are saved to the default dataset. Download as JSON, CSV, Excel, or XML f
 | `venue` | string | Conference or journal name |
 | `journal` | string | Journal with volume and page numbers |
 | `abstract` | string | Full abstract text |
-| `tldr` | string | AI-generated one-sentence summary (S2 only, ~40% coverage) |
+| `tldr` | string | AI-generated one-sentence summary (S2 search and paper lookup, ~40% coverage; empty in citations mode) |
 | `doi` | string | Digital Object Identifier |
 | `arxiv_id` | string | arXiv preprint ID |
 | `pubmed_id` | string | PubMed ID |
@@ -209,7 +209,7 @@ Results are saved to the default dataset. Download as JSON, CSV, Excel, or XML f
 - Citation counts, reference counts, and **influential citation counts**
 - **AI-generated TLDR summaries** for ~40% of papers
 - Accepts DOI, arXiv ID, PubMed ID, and Semantic Scholar ID for direct lookup
-- Rate limit: 1 req/sec without an API key (built-in compliance)
+- Runs on a Semantic Scholar API key out of the box, paced to stay inside its rate limit
 
 ### arXiv
 
@@ -220,6 +220,8 @@ Results are saved to the default dataset. Download as JSON, CSV, Excel, or XML f
 - No citation data (use Semantic Scholar for citation metrics)
 
 **When to use each:** Use `auto` (default). It picks Semantic Scholar for general queries and arXiv when you specify `arxivCategories`. Override to `arxiv` explicitly when you need preprints or category-specific filtering.
+
+**Attribution:** paper data is provided by [Semantic Scholar](https://www.semanticscholar.org/), from The Semantic Scholar Open Data Platform (Kinney et al., 2023, [arXiv:2301.10140](https://arxiv.org/abs/2301.10140)), and by [arXiv](https://arxiv.org/). Thank you to arXiv for use of its open access interoperability.
 
 ---
 
@@ -285,7 +287,7 @@ This actor works as an MCP tool via Apify's hosted MCP server. AI agents can que
 
 ## Limitations
 
-- **S2 rate limits** may slow large requests. The scraper respects the 1 req/sec limit but Semantic Scholar may throttle during peak times. Without an `apiKey` it retries once then falls back to arXiv within seconds; supply an `apiKey` to eliminate most 429 errors and retry longer.
+- **S2 rate limits** may slow large requests. The scraper paces itself to 1 request per second on its built-in key and retries with backoff if Semantic Scholar throttles. If Semantic Scholar stays unavailable, `auto` mode falls back to arXiv. Supply your own `apiKey` for a dedicated rate limit.
 - **arXiv has no citation data.** Citation counts, reference counts, and TLDR summaries are only available from Semantic Scholar.
 - **TLDR coverage is ~40%.** Not available for all papers in Semantic Scholar.
 - **Year filtering on arXiv is client-side** — arXiv's API does not support native year ranges, so the scraper fetches extra pages and filters locally.

@@ -649,8 +649,11 @@ class AcademicPaperScraper:
         offset = 0
         total_yielded = 0
 
-        # S2 citation fields -- nested under citingPaper/citedPaper
-        citation_fields = _S2_PAPER_FIELDS
+        # S2 citation fields -- nested under citingPaper/citedPaper. The
+        # citations and references endpoints reject tldr with a 400.
+        citation_fields = ",".join(
+            f for f in _S2_PAPER_FIELDS.split(",") if f != "tldr"
+        )
 
         while total_yielded < max_results:
             page_size = min(_S2_PAGE_SIZE, max_results - total_yielded)

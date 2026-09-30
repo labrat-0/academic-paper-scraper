@@ -158,7 +158,7 @@
         "apiKey": {
             "title": "🔑 Semantic Scholar API Key (optional)",
             "type": "string",
-            "description": "Optional Semantic Scholar API key. Eliminates most rate-limit (429) errors and enables higher throughput. Request one free at https://www.semanticscholar.org/product/api. Leave blank to use the shared pool (slower, more 429s — the actor falls back to arXiv automatically).",
+            "description": "Optional. The actor already runs on its own Semantic Scholar API key, so you can leave this blank. Add your own key for a dedicated rate limit on very large jobs. Request one free at https://www.semanticscholar.org/product/api.",
             "editor": "textfield",
             "isSecret": true
         }
