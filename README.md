@@ -110,7 +110,7 @@ Get all papers that cite a given paper (`citing`), or all papers it references (
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `mode` | string | `search` | `search`, `get_paper`, or `citations` |
-| `query` | string | required | Keywords (search mode) or paper ID (get_paper/citations mode) |
+| `query` | string | none | Keywords (search mode) or paper ID (get_paper/citations mode). Required unless `queriesList` is set. |
 | `queriesList` | string[] | `[]` | Multiple search queries, merged and deduplicated. Overrides `query`. Search mode only. |
 | `source` | string | `auto` | `auto`, `semantic_scholar`, or `arxiv` |
 | `citationDirection` | string | `citing` | `citing` (who cited it) or `cited_by` (its references). Citations mode only. |

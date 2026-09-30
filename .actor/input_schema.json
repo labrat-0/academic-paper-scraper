@@ -163,6 +163,6 @@
             "isSecret": true
         }
     },
-    "required": ["query"],
+    "required": [],
     "additionalProperties": false
 }
