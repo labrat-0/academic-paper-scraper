@@ -363,7 +363,7 @@ class AcademicPaperScraper:
                         soft_attempt + 1, wait, total_available,
                     )
                     await asyncio.sleep(wait)
-                    # Direct request — no _s2_request nesting
+                    # Direct request, no _s2_request nesting
                     for direct_attempt in range(2):
                         await self._rate_limiter.wait()
                         try:

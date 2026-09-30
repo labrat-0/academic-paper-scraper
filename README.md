@@ -6,30 +6,30 @@ Search and retrieve academic papers from Semantic Scholar (226M+ papers) and arX
 
 ## What does it do?
 
-Academic Paper Scraper queries the Semantic Scholar Graph API and arXiv API to find, retrieve, and analyze academic literature. It unifies results from both sources into a consistent schema — same fields regardless of where the paper came from.
+Academic Paper Scraper queries the Semantic Scholar Graph API and arXiv API to find, retrieve, and analyze academic literature. It unifies results from both sources into a consistent schema, with the same fields regardless of where the paper came from.
 
-**v1.1.0:** Added batch search (`queriesList`) — run multiple queries in a single job with automatic deduplication by paper ID.
+**v1.1.0:** Added batch search (`queriesList`): run multiple queries in a single job with automatic deduplication by paper ID.
 
 ## Who uses this
 
-- **AI/LLM builders** — collect topic-specific abstracts, TLDRs, and metadata to build RAG pipelines, fine-tune models, or power research assistants without manually downloading papers
-- **Systematic review and meta-analysis teams** — gather hundreds of papers across multiple search queries in one run, deduplicated and ready for screening
-- **Pharma and biotech researchers** — map the drug discovery literature, track clinical trial publications, pull genomics papers by field and date range
-- **Research intelligence teams** — monitor what competitors and academia are publishing; track emerging topics by citation velocity
-- **Developers building research tools** — programmatic access to academic literature via REST API, Python/JS clients, or MCP for AI agent integration
+- **AI/LLM builders**: collect topic-specific abstracts, TLDRs, and metadata to build RAG pipelines, fine-tune models, or power research assistants without manually downloading papers
+- **Systematic review and meta-analysis teams**: gather hundreds of papers across multiple search queries in one run, deduplicated and ready for screening
+- **Pharma and biotech researchers**: map the drug discovery literature, track clinical trial publications, pull genomics papers by field and date range
+- **Research intelligence teams**: monitor what competitors and academia are publishing; track emerging topics by citation velocity
+- **Developers building research tools**: programmatic access to academic literature via REST API, Python/JS clients, or MCP for AI agent integration
 
 ## Features
 
 - **3 scraping modes:** keyword search, paper lookup by ID, citation graph traversal
-- **Batch search:** run multiple queries in one job — results merged and deduplicated by paper ID
-- **226M+ papers via Semantic Scholar** — covers all academic fields, with citation metrics and AI-generated TLDRs
-- **2.4M+ preprints via arXiv** — all open access, best for physics, CS, math, and adjacent fields
+- **Batch search:** run multiple queries in one job, with results merged and deduplicated by paper ID
+- **226M+ papers via Semantic Scholar**: covers all academic fields, with citation metrics and AI-generated TLDRs
+- **2.4M+ preprints via arXiv**: all open access, best for physics, CS, math, and adjacent fields
 - **Filters:** publication year range, fields of study, open-access only, arXiv categories
 - **Citation graph:** get all papers citing a work, or the full reference list of any paper
 - **AI summaries (TLDR):** one-sentence AI-generated summaries for ~40% of Semantic Scholar papers
 - **Open access links:** direct PDF URLs when available
-- **No API key required** — works out of the box against public APIs
-- **No proxy costs** — API-based, no browser rendering, no bot detection issues
+- **No API key required**: works out of the box against public APIs
+- **No proxy costs**: API-based, no browser rendering, no bot detection issues
 
 ---
 
@@ -49,7 +49,7 @@ Academic Paper Scraper queries the Semantic Scholar Graph API and arXiv API to f
 
 ### Mode 1b: Batch search (v1.1.0)
 
-Run multiple queries in a single job — results merged and deduplicated across all queries:
+Run multiple queries in a single job, with results merged and deduplicated across all queries:
 
 ```json
 {
@@ -111,11 +111,11 @@ Get all papers that cite a given paper (`citing`), or all papers it references (
 |-----------|------|---------|-------------|
 | `mode` | string | `search` | `search`, `get_paper`, or `citations` |
 | `query` | string | required | Keywords (search mode) or paper ID (get_paper/citations mode) |
-| `queriesList` | string[] | `[]` | Multiple search queries — merged and deduplicated. Overrides `query`. Search mode only. |
+| `queriesList` | string[] | `[]` | Multiple search queries, merged and deduplicated. Overrides `query`. Search mode only. |
 | `source` | string | `auto` | `auto`, `semantic_scholar`, or `arxiv` |
 | `citationDirection` | string | `citing` | `citing` (who cited it) or `cited_by` (its references). Citations mode only. |
-| `yearFrom` | integer | — | Filter: published on or after this year |
-| `yearTo` | integer | — | Filter: published on or before this year |
+| `yearFrom` | integer | none | Filter: published on or after this year |
+| `yearTo` | integer | none | Filter: published on or before this year |
 | `fieldsOfStudy` | string[] | `[]` | Filter by field: `Computer Science`, `Medicine`, `Physics`, `Biology`, etc. (S2 only) |
 | `openAccessOnly` | boolean | `false` | Only return papers with a free PDF available |
 | `arxivCategories` | string[] | `[]` | Filter by arXiv category: `cs.AI`, `cs.LG`, `q-bio.NC`, etc. (arXiv source only) |
@@ -227,11 +227,11 @@ Results are saved to the default dataset. Download as JSON, CSV, Excel, or XML f
 
 ## Cost
 
-This actor uses **pay-per-event (PPE) pricing** — you pay only for results you get.
+This actor uses **pay-per-event (PPE) pricing**: you pay only for results you get.
 
 - **$0.50 per 1,000 results** ($0.0005 per paper)
-- **No proxy costs** — API-based, no browser, no residential proxies needed
-- **Free tier: 25 results per run** — no subscription required
+- **No proxy costs**: API-based, no browser, no residential proxies needed
+- **Free tier: 25 results per run**: no subscription required
 - **Paid tier: up to 500 results per run**
 
 Typical run: 100 papers takes about 10 seconds. Cost: **$0.05**.
@@ -240,7 +240,7 @@ Typical run: 100 papers takes about 10 seconds. Cost: **$0.05**.
 
 ## MCP Integration
 
-This actor works as an MCP tool via Apify's hosted MCP server. AI agents can query academic literature directly — no custom server setup required.
+This actor works as an MCP tool via Apify's hosted MCP server. AI agents can query academic literature directly, no custom server setup required.
 
 - **Endpoint:** `https://mcp.apify.com?tools=labrat011/academic-paper-scraper`
 - **Auth:** `Authorization: Bearer <APIFY_TOKEN>`
@@ -265,7 +265,7 @@ This actor works as an MCP tool via Apify's hosted MCP server. AI agents can que
 **Example agent prompts:**
 
 - "Find the 20 most-cited papers on CRISPR base editing published since 2021"
-- "Search for papers on 'retrieval augmented generation' and 'knowledge graphs' — combine the results"
+- "Search for papers on 'retrieval augmented generation' and 'knowledge graphs', then combine the results"
 - "Look up the paper at DOI 10.1038/s41586-021-03819-2 and summarize its key findings"
 - "What papers cite 'Attention Is All You Need'? Show me the top 30 by citation count from 2023 onward"
 - "Search arXiv for recent cs.AI and cs.CL papers on instruction tuning, sorted by date"
@@ -290,9 +290,9 @@ This actor works as an MCP tool via Apify's hosted MCP server. AI agents can que
 - **S2 rate limits** may slow large requests. The scraper paces itself to 1 request per second on its built-in key and retries with backoff if Semantic Scholar throttles. If Semantic Scholar stays unavailable, `auto` mode falls back to arXiv. Supply your own `apiKey` for a dedicated rate limit.
 - **arXiv has no citation data.** Citation counts, reference counts, and TLDR summaries are only available from Semantic Scholar.
 - **TLDR coverage is ~40%.** Not available for all papers in Semantic Scholar.
-- **Year filtering on arXiv is client-side** — arXiv's API does not support native year ranges, so the scraper fetches extra pages and filters locally.
-- **Max 500 results per run** — Semantic Scholar's API imposes practical limits on unauthenticated bulk access.
-- **`get_paper` and `citations` modes require a single query** — batch via `queriesList` applies to search mode only.
+- **Year filtering on arXiv is client-side**: arXiv's API does not support native year ranges, so the scraper fetches extra pages and filters locally.
+- **Max 500 results per run**: Semantic Scholar's API imposes practical limits on unauthenticated bulk access.
+- **`get_paper` and `citations` modes require a single query**: batch via `queriesList` applies to search mode only.
 
 ---
 
@@ -304,11 +304,11 @@ Use `auto` (the default). It picks Semantic Scholar for general searches and arX
 
 ### How does batch search work?
 
-Set `queriesList` to an array of search terms. The actor runs each query sequentially and merges results into a single dataset, removing duplicates matched by Semantic Scholar paper ID, arXiv ID, DOI, or title. Each query gets its own budget of `maxResultsPerQuery` results (default 50) so no topic is starved, while `maxResults` caps the combined total — set `maxResults` ≥ `maxResultsPerQuery` × number-of-queries to fully cover every topic. This is the recommended approach for systematic reviews (run all your PICO terms at once) and research monitoring (track multiple topics in a scheduled daily run).
+Set `queriesList` to an array of search terms. The actor runs each query sequentially and merges results into a single dataset, removing duplicates matched by Semantic Scholar paper ID, arXiv ID, DOI, or title. Each query gets its own budget of `maxResultsPerQuery` results (default 50) so no topic is starved, while `maxResults` caps the combined total. Set `maxResults` ≥ `maxResultsPerQuery` × number-of-queries to fully cover every topic. This is the recommended approach for systematic reviews (run all your PICO terms at once) and research monitoring (track multiple topics in a scheduled daily run).
 
 ### Can I search by author?
 
-Yes — include the author name in your query: `"Yann LeCun deep learning"`. Semantic Scholar's relevance ranking considers author names. For a precise author search, add the name in quotes: `"\"Yoshua Bengio\" neural networks"`.
+Yes. Include the author name in your query: `"Yann LeCun deep learning"`. Semantic Scholar's relevance ranking considers author names. For a precise author search, add the name in quotes: `"\"Yoshua Bengio\" neural networks"`.
 
 ### How do I look up a specific paper?
 
@@ -316,8 +316,8 @@ Use `get_paper` mode with any identifier: DOI (`10.1038/...`), arXiv ID (`2301.1
 
 ### What's the difference between `citing` and `cited_by`?
 
-- `citing` — returns papers that **cite** your target (who referenced it afterward)
-- `cited_by` — returns papers that your target **cites** (its own bibliography)
+- `citing`: returns papers that **cite** your target (who referenced it afterward)
+- `cited_by`: returns papers that your target **cites** (its own bibliography)
 
 Use `citing` to find follow-on work and measure influence. Use `cited_by` to trace a paper's intellectual lineage.
 

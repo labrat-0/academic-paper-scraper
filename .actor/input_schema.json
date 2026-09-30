@@ -1,6 +1,6 @@
 {
     "title": "Academic Paper Scraper - Input",
-    "description": "Search and retrieve academic papers from Semantic Scholar (226M+ papers) and arXiv. Batch search multiple queries in one run. API-based — no browser, no bot detection, no API key required.",
+    "description": "Search and retrieve academic papers from Semantic Scholar (226M+ papers) and arXiv. Batch search multiple queries in one run. API-based, no browser, no bot detection, no API key required.",
     "type": "object",
     "schemaVersion": 1,
     "properties": {
@@ -13,9 +13,9 @@
             "editor": "select",
             "enum": ["search", "get_paper", "citations"],
             "enumTitles": [
-                "🔍 Search — find papers by keywords",
-                "📄 Get Paper — look up a specific paper by DOI / arXiv ID / PMID",
-                "🔗 Citations — traverse the citation graph"
+                "🔍 Search: find papers by keywords",
+                "📄 Get Paper: look up a specific paper by DOI / arXiv ID / PMID",
+                "🔗 Citations: traverse the citation graph"
             ],
             "default": "search"
         },
@@ -24,14 +24,14 @@
             "sectionDescription": "For Search mode: keywords or a phrase. For Get Paper / Citations mode: a paper identifier (DOI, arXiv ID, PubMed ID, or Semantic Scholar ID). Use Queries List below to batch search multiple terms in one run.",
             "title": "🔍 Search Query or Paper ID",
             "type": "string",
-            "description": "For 'search': keywords like 'transformer attention mechanism'. For 'get_paper'/'citations': a paper ID — DOI (10.1234/...), arXiv ID (2301.12345), PubMed ID (PMID:12345678), or Semantic Scholar ID.",
+            "description": "For 'search': keywords like 'transformer attention mechanism'. For 'get_paper'/'citations': a paper ID: DOI (10.1234/...), arXiv ID (2301.12345), PubMed ID (PMID:12345678), or Semantic Scholar ID.",
             "editor": "textfield",
             "prefill": "transformer attention mechanism"
         },
         "queriesList": {
             "title": "🔍 Queries List (Batch Search)",
             "type": "array",
-            "description": "Run multiple search queries in a single job — results are merged and deduplicated by paper ID. Overrides the single Query field when provided. Ideal for systematic reviews, topic mapping, and research monitoring. Example: [\"CRISPR gene editing\", \"base editing\", \"prime editing\"]",
+            "description": "Run multiple search queries in a single job, and results are merged and deduplicated by paper ID. Overrides the single Query field when provided. Ideal for systematic reviews, topic mapping, and research monitoring. Example: [\"CRISPR gene editing\", \"base editing\", \"prime editing\"]",
             "editor": "json",
             "prefill": []
         },
