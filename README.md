@@ -229,12 +229,13 @@ Results are saved to the default dataset. Download as JSON, CSV, Excel, or XML f
 
 This actor uses **pay-per-event (PPE) pricing**: you pay only for results you get.
 
-- **$0.50 per 1,000 results** ($0.0005 per paper)
+- **$5.00 per 1,000 results** ($0.005 per paper)
+- **Small one-time start fee per run**, charged by Apify
 - **No proxy costs**: API-based, no browser, no residential proxies needed
 - **Free tier: 25 results per run**: no subscription required
 - **Paid tier: up to 500 results per run**
 
-Typical run: 100 papers takes about 10 seconds. Cost: **$0.05**.
+Typical run: 100 papers takes about 10 seconds. Cost: about **$0.50**.
 
 ---
 
@@ -276,7 +277,7 @@ This actor works as an MCP tool via Apify's hosted MCP server. AI agents can que
 ## Technical details
 
 - Python 3.12, async with `httpx.AsyncClient`
-- Semantic Scholar Graph API v1 (no credentials required)
+- Semantic Scholar Graph API v1 (built-in API key, none needed from you)
 - arXiv Atom API with XML parsing (`xml.etree.ElementTree`)
 - Automatic paper ID detection: DOI, arXiv ID, PubMed ID, Corpus ID, S2 ID
 - Paginated fetching with configurable rate limiting
@@ -291,7 +292,7 @@ This actor works as an MCP tool via Apify's hosted MCP server. AI agents can que
 - **arXiv has no citation data.** Citation counts, reference counts, and TLDR summaries are only available from Semantic Scholar.
 - **TLDR coverage is ~40%.** Not available for all papers in Semantic Scholar.
 - **Year filtering on arXiv is client-side**: arXiv's API does not support native year ranges, so the scraper fetches extra pages and filters locally.
-- **Max 500 results per run**: Semantic Scholar's API imposes practical limits on unauthenticated bulk access.
+- **Max 500 results per run**: split larger jobs across several runs or queries.
 - **`get_paper` and `citations` modes require a single query**: batch via `queriesList` applies to search mode only.
 
 ---
