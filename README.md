@@ -230,12 +230,13 @@ Results are saved to the default dataset. Download as JSON, CSV, Excel, or XML f
 This actor uses **pay-per-event (PPE) pricing**: you pay only for results you get.
 
 - **$5.00 per 1,000 results** ($0.005 per paper)
-- **Small one-time start fee per run**, charged by Apify
+- **$0.005 start fee per run**
+- **Platform usage is billed to your Apify account**: compute and storage for a run are a fraction of a cent
 - **No proxy costs**: API-based, no browser, no residential proxies needed
 - **Free tier: 25 results per run**: no subscription required
 - **Paid tier: up to 500 results per run**
 
-Typical run: 100 papers takes about 10 seconds. Cost: about **$0.50**.
+Typical run: 100 papers takes about 10 seconds. Cost: about **$0.51**.
 
 ---
 
